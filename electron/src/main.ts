@@ -44,3 +44,7 @@ ipcMain.handle('ping', async () => 'pong')
 ipcMain.on('preload-ready', () => {
   console.log('[main] preload signalled ready')
 })
+
+ipcMain.handle('getAppVersion', async () => {
+  return app.getVersion()
+})

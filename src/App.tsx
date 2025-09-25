@@ -42,16 +42,14 @@ export default function App() {
             <div className="ml-4">
               <button
                 onClick={async () => {
-                  const lib = await import('./lib/electron')
-                  if (!lib.isElectron) {
-                    console.log('electron not available')
-                    return
-                  }
                   try {
-                    const res = await lib.default.invoke('ping')
+                    const api = (await import('./lib/api')).default
+                    const res = await api.ping()
                     console.log('ping result', res)
+                    const version = await api.getAppVersion()
+                    console.log('app version', version)
                   } catch (err) {
-                    console.log('ping failed', err)
+                    console.log('native api not available', err)
                   }
                 }}
                 className="rounded px-2 py-1 text-sm border"

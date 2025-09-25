@@ -14,13 +14,14 @@ if (!fs.existsSync(js)) {
 try {
   // write a minimal CommonJS preload directly to avoid ESM import issues
   const content = `const { contextBridge, ipcRenderer } = require('electron');
-const api = { invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args) };
-// expose platform helper and the electron api
-contextBridge.exposeInMainWorld('electron', api);
+// typed API surface
+contextBridge.exposeInMainWorld('api', {
+  ping: () => ipcRenderer.invoke('ping'),
+  getAppVersion: () => ipcRenderer.invoke('getAppVersion')
+});
 contextBridge.exposeInMainWorld('platform', { isElectron: true });
-// notify main process that preload loaded
-try { ipcRenderer.send('preload-ready') } catch (e) { /* ignore */ }
-console.log('[preload] executed and electron API exposed');
+try { ipcRenderer.send('preload-ready') } catch (e) { }
+console.log('[preload] typed API exposed');
 `;
   fs.mkdirSync(out, { recursive: true })
   fs.writeFileSync(cjs, content, 'utf8')
