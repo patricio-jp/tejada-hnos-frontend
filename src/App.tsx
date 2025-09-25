@@ -39,6 +39,26 @@ export default function App() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <div className="ml-4">
+              <button
+                onClick={async () => {
+                  const lib = await import('./lib/electron')
+                  if (!lib.isElectron) {
+                    console.log('electron not available')
+                    return
+                  }
+                  try {
+                    const res = await lib.default.invoke('ping')
+                    console.log('ping result', res)
+                  } catch (err) {
+                    console.log('ping failed', err)
+                  }
+                }}
+                className="rounded px-2 py-1 text-sm border"
+              >
+                Ping Electron
+              </button>
+            </div>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
