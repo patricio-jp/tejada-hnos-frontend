@@ -118,3 +118,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer ui {
+  [data-slot="sidebar"] a.active {
+    @apply bg-sidebar-primary text-sidebar-primary-foreground;
+    @apply hover:bg-sidebar-primary/90;
+  }
+
+  [data-state="expanded"] [data-sidebar="sidebar"] .systemHeader{
+    @apply p-2;
+  }
+}

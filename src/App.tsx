@@ -1,73 +1,67 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { Routes, Route } from 'react-router'
+import LoginPage from '@/modules/Auth/pages/login'
+
+
+function Home() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Home</h1>
+      <p className="mt-2">Welcome to the app. Use the navigation to try routes.</p>
+    </div>
+  )
+}
+
+function About() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">About</h1>
+      <p className="mt-2">This is an example route implemented with React Router.</p>
+    </div>
+  )
+}
+
+function Protected() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Protected</h1>
+      <p className="mt-2">You can see this because you're authenticated.</p>
+    </div>
+  )
+}
+
+function NotFound() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Not found</h1>
+      <p className="mt-2">The page you're looking for doesn't exist.</p>
+    </div>
+  )
+}
+
+import { ThemeProvider } from '@/lib/theme'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { Layout } from './components/layout/layout'
+
 
 export default function App() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <div className="ml-4">
-              <button
-                onClick={async () => {
-                  try {
-                    const api = (await import('./lib/api')).default
-                    const res = await api.ping()
-                    console.log('ping result', res)
-                    const version = await api.getAppVersion()
-                    console.log('app version', version)
-                  } catch (err) {
-                    console.log('native api not available', err)
-                  }
-                }}
-                className="rounded px-2 py-1 text-sm border"
-              >
-                Ping Electron
-              </button>
-            </div>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+      <Layout>
+        <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route
+                path="/protected"
+                element={
+                  <ProtectedRoute>
+                    <Protected />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+      </Layout>
+    </ThemeProvider>
   )
 }
