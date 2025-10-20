@@ -1,11 +1,11 @@
-// src/components/FieldsMap.tsx
-
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import { useState } from "react";
+import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import { type LatLngTuple, Layer } from "leaflet";
 import type { Field, FieldBoundary } from "@/lib/map-types";
 import type { Feature } from 'geojson';
 import { useNavigate } from "react-router"; // Para la navegación
+import { computePolygonCentroid } from "../utils/geometry";
+import { MapFlyTo } from "./common/MapFlyTo";
 
 // Componentes Shadcn
 import {
@@ -20,68 +20,6 @@ import { Button } from "@/components/ui/button";
 interface FieldsMapProps {
   fields: Field[];
 }
-
-// Helper: centroid preciso del anillo exterior (coords: number[][][] -> [lng,lat] arrays)
-const computePolygonCentroid = (coords: number[][][]): LatLngTuple => {
-  const ring = coords[0];
-  const n = ring.length;
-  if (n === 0) return [-26.83, -65.20];
-
-  // asegurarse de que el anillo esté cerrado
-  const closed = ring[0][0] === ring[n - 1][0] && ring[0][1] === ring[n - 1][1];
-  const m = closed ? n - 1 : n;
-
-  let A = 0;
-  let Cx = 0;
-  let Cy = 0;
-
-  for (let i = 0; i < m; i++) {
-    const xi = ring[i][0];
-    const yi = ring[i][1];
-    const xj = ring[(i + 1) % m][0];
-    const yj = ring[(i + 1) % m][1];
-    const cross = xi * yj - xj * yi;
-    A += cross;
-    Cx += (xi + xj) * cross;
-    Cy += (yi + yj) * cross;
-  }
-
-  A = A / 2;
-  if (A === 0) {
-    // Polígono degenerado -> fallback a promedio
-    let sumLng = 0;
-    let sumLat = 0;
-    for (let i = 0; i < m; i++) {
-      sumLng += ring[i][0];
-      sumLat += ring[i][1];
-    }
-    return [sumLat / m, sumLng / m];
-  }
-
-  const centroidX = Cx / (6 * A);
-  const centroidY = Cy / (6 * A);
-
-  // coords están en [lng, lat], Leaflet usa [lat, lng]
-  return [centroidY, centroidX];
-};
-
-// Componente para centrar el mapa dinámicamente (invalida tamaño y evita pequeños saltos)
-const MapFlyTo: React.FC<{ center: LatLngTuple; zoom: number }> = ({ center, zoom }) => {
-  const map = useMap();
-  // ejecutar en efecto cuando cambie center/zoom
-  useEffect(() => {
-    // asegurar que Leaflet recalibre tamaño (evita offsets cuando cambió el contenedor)
-    setTimeout(() => map.invalidateSize(), 0);
-    const current = map.getCenter();
-    const latDiff = Math.abs(current.lat - center[0]);
-    const lngDiff = Math.abs(current.lng - center[1]);
-    const threshold = 0.0005; // umbral pequeño para evitar saltos innecesarios
-    if (latDiff > threshold || lngDiff > threshold) {
-      map.flyTo(center, zoom);
-    }
-  }, [map, center, zoom]);
-  return null;
-};
 
 export function FieldsMap({ fields }: FieldsMapProps) {
   const [selectedField, setSelectedField] = useState<Field | null>(null);
@@ -137,9 +75,10 @@ export function FieldsMap({ fields }: FieldsMapProps) {
 
         {/* Centrado dinámico al seleccionar un campo */}
         {selectedField && (
-          <MapFlyTo center={[
-            ...computePolygonCentroid(selectedField.boundary.geometry.coordinates)
-          ]} zoom={14} />
+          <MapFlyTo
+            center={computePolygonCentroid(selectedField.boundary.geometry.coordinates)}
+            zoom={14}
+          />
         )}
       </MapContainer>
 
