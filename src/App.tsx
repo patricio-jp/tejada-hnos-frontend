@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react'
 import { Routes, Route } from 'react-router'
 import LoginPage from '@/modules/Auth/pages/login'
 
@@ -38,6 +39,12 @@ function NotFound() {
   )
 }
 
+const PaginaCargando = () => (
+  <div className="container mx-auto py-10">Cargando...</div>
+);
+const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
+const ParcelaPage = React.lazy(() => import('./modules/Fields/pages/PlotsPage'));
+
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Layout } from './components/layout/layout'
@@ -48,20 +55,29 @@ export default function App() {
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
       <Layout>
         <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route
-                path="/protected"
-                element={
-                  <ProtectedRoute>
-                    <Protected />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-      </Layout>
-    </ThemeProvider>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route
+            path="/protected"
+            element={
+              <ProtectedRoute>
+                <Protected />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Suspense fallback={<PaginaCargando />}>
+          <Routes>
+            {/* Ruta para la lista de campos */}
+            <Route path="/fields" element={<CamposPage />} />
+            
+            {/* Ruta para el editor de parcelas */}
+            <Route path="/fields/:fieldId" element={<ParcelaPage />} />
+          </Routes>
+        </Suspense>
+    </Layout>
+  </ThemeProvider>
   )
 }
