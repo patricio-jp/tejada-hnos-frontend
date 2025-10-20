@@ -8,6 +8,7 @@ interface PlotDetailsSheetProps {
   onClose: () => void;
   onEdit: (plot: Plot) => void;
   onDelete: (plot: Plot) => void;
+  onEditGeometry?: (plot: Plot) => void;
 }
 
 export const PlotDetailsSheet: React.FC<PlotDetailsSheetProps> = ({
@@ -16,6 +17,7 @@ export const PlotDetailsSheet: React.FC<PlotDetailsSheetProps> = ({
   onClose,
   onEdit,
   onDelete,
+  onEditGeometry,
 }) => (
   <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
     <SheetContent className="z-[9999]">
@@ -35,13 +37,29 @@ export const PlotDetailsSheet: React.FC<PlotDetailsSheetProps> = ({
               <span>Área</span>
               <span>{plot.properties.area ?? 0} ha</span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>Color</span>
+              <span className="flex items-center gap-2">
+                <span
+                  className="inline-flex h-4 w-4 rounded-full border"
+                  style={{ backgroundColor: plot.properties.color ?? "#16a34a" }}
+                />
+                <span>{plot.properties.color ?? "--"}</span>
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <Button className="flex-1" onClick={() => onEdit(plot)}>
-              Editar
+          <div className="grid gap-2 mt-4">
+            <Button onClick={() => onEdit(plot)}>
+              Editar datos
             </Button>
             <Button
-              className="flex-1"
+              variant="secondary"
+              onClick={() => onEditGeometry?.(plot)}
+              disabled={!onEditGeometry}
+            >
+              Editar geometría
+            </Button>
+            <Button
               variant="destructive"
               onClick={() => onDelete(plot)}
             >

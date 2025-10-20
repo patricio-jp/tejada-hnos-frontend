@@ -11,6 +11,7 @@ export interface PlotProperties {
   name: string;
   variety: string;
   area: number; // en hectáreas
+  color?: string;
 }
 
 /**

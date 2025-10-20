@@ -15,6 +15,7 @@ interface PlotEditDialogProps {
   onUpdate: (plot: Plot) => void;
   onClose: () => void;
   onSave: () => void;
+  onEditGeometry?: (plot: Plot) => void;
 }
 
 export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
@@ -22,6 +23,7 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
   onUpdate,
   onClose,
   onSave,
+  onEditGeometry,
 }) => (
   <Dialog open={!!plot} onOpenChange={(isOpen) => !isOpen && onClose()}>
     <DialogContent className="z-[9999]">
@@ -68,9 +70,28 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
               className="col-span-3"
             />
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Color</Label>
+            <div className="col-span-3 flex items-center gap-2">
+              <span
+                className="inline-flex h-4 w-4 rounded-full border"
+                style={{ backgroundColor: plot.properties.color ?? "#16a34a" }}
+              />
+              <span className="text-sm text-muted-foreground">
+                {plot.properties.color ?? "--"}
+              </span>
+            </div>
+          </div>
         </div>
       )}
       <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => plot && onEditGeometry?.(plot)}
+          disabled={!plot || !onEditGeometry}
+        >
+          Editar geometría
+        </Button>
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>

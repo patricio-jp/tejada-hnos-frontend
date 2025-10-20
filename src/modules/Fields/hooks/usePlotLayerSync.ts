@@ -3,6 +3,8 @@ import L from "leaflet";
 import type { GeoJsonObject } from "geojson";
 import type { Plot } from "@/lib/map-types";
 
+const DEFAULT_PLOT_COLOR = "#16a34a";
+
 interface UsePlotLayerSyncOptions {
   plots: Plot[];
   onSelectPlot: (plot: Plot) => void;
@@ -13,6 +15,8 @@ interface UsePlotLayerSyncResult {
   handleFeatureGroupRef: (group: L.FeatureGroup | null) => void;
   removePlotLayer: (id: string | number) => void;
   featureGroup: L.FeatureGroup | null;
+  enablePlotGeometryEdit: (id: string | number) => void;
+  disablePlotGeometryEdit: (id?: string | number) => void;
 }
 
 export const usePlotLayerSync = ({
@@ -31,10 +35,15 @@ export const usePlotLayerSync = ({
       _leaflet_id?: number;
       off?: (event: string) => void;
       eachLayer?: (cb: (l: L.Layer) => void) => void;
+      editing?: { disable?: () => void };
     };
 
     if (candidate.eachLayer) {
       candidate.eachLayer((nested) => cleanupLayer(nested));
+    }
+
+    if (candidate.editing?.disable) {
+      candidate.editing.disable();
     }
 
     if (candidate._leaflet_id != null) {
@@ -69,6 +78,58 @@ export const usePlotLayerSync = ({
     setFeatureGroupReady(Boolean(group));
   }, []);
 
+  const enablePlotGeometryEdit = useCallback((plotId: string | number) => {
+    const layers = mockLayerRef.current.get(String(plotId));
+    if (!layers) return;
+
+    layers.forEach((layer) => {
+      const editable = layer as unknown as { editing?: { enable?: () => void } };
+      if (editable.editing?.enable) {
+        editable.editing.enable();
+      }
+
+      const pathLayer = layer as unknown as {
+        setStyle?: (style: Partial<L.PathOptions>) => void;
+        bringToFront?: () => void;
+      };
+
+      if (pathLayer.setStyle) {
+        pathLayer.setStyle({ weight: 4, dashArray: "6 4" });
+      }
+
+      if (pathLayer.bringToFront) {
+        pathLayer.bringToFront();
+      }
+    });
+  }, []);
+
+  const disablePlotGeometryEdit = useCallback((plotId?: string | number) => {
+    const disableLayers = (layers: L.Layer[]) => {
+      layers.forEach((layer) => {
+        const editable = layer as unknown as { editing?: { disable?: () => void } };
+        if (editable.editing?.disable) {
+          editable.editing.disable();
+        }
+
+        const pathLayer = layer as unknown as {
+          setStyle?: (style: Partial<L.PathOptions>) => void;
+        };
+
+        if (pathLayer.setStyle) {
+          pathLayer.setStyle({ weight: 2, dashArray: undefined });
+        }
+      });
+    };
+
+    if (plotId != null) {
+      const layers = mockLayerRef.current.get(String(plotId));
+      if (layers) disableLayers(layers);
+      return;
+    }
+
+    mockLayerRef.current.forEach((layers) => disableLayers(layers));
+  }, []);
+
   useEffect(() => {
     if (!isFeatureGroupReady) return;
     const fg = featureGroupRef.current;
@@ -89,8 +150,15 @@ export const usePlotLayerSync = ({
         });
       }
 
+      const plotColor = plot.properties?.color ?? DEFAULT_PLOT_COLOR;
+
       const geoLayer = L.geoJSON(plot as GeoJsonObject, {
-        style: { color: "#16a34a", fillColor: "#16a34a", fillOpacity: 0.4, weight: 2 },
+        style: {
+          color: plotColor,
+          fillColor: plotColor,
+          fillOpacity: 0.4,
+          weight: 2,
+        },
       });
 
       const layersForPlot: L.Layer[] = [];
@@ -142,5 +210,7 @@ export const usePlotLayerSync = ({
     handleFeatureGroupRef,
     removePlotLayer,
     featureGroup,
+    enablePlotGeometryEdit,
+    disablePlotGeometryEdit,
   };
 };

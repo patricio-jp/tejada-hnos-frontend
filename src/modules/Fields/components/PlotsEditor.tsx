@@ -1,6 +1,6 @@
 // src/components/PlotsEditor.tsx
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { MapContainer, TileLayer, FeatureGroup, GeoJSON } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import type { Field, Plot } from "@/lib/map-types";
@@ -16,29 +16,111 @@ interface PlotsEditorProps {
   field: Field;
 }
 
+const PLOT_COLOR_PALETTE = [
+  "#16a34a",
+  "#3b82f6",
+  "#f97316",
+  "#ec4899",
+  "#8b5cf6",
+  "#22d3ee",
+  "#f59e0b",
+  "#ef4444",
+];
+
+const getColorForIndex = (index: number): string =>
+  PLOT_COLOR_PALETTE[index % PLOT_COLOR_PALETTE.length];
+
+const pickAvailableColor = (usedColors: Set<string>, index: number): string => {
+  for (let offset = 0; offset < PLOT_COLOR_PALETTE.length; offset++) {
+    const candidate = getColorForIndex(index + offset);
+    if (!usedColors.has(candidate)) {
+      usedColors.add(candidate);
+      return candidate;
+    }
+  }
+
+  const hue = (index * 47) % 360;
+  const fallback = `hsl(${hue} 70% 45%)`;
+  usedColors.add(fallback);
+  return fallback;
+};
+
 export function PlotsEditor({ field }: PlotsEditorProps) {
 
   // Inicializar plots garantizando que tengan 'area' calculada
-  const [plots, setPlots] = useState<Plot[]>(() =>
-    (field.plots || []).map((p, idx) => {
+  const [plots, setPlots] = useState<Plot[]>(() => {
+    const usedColors = new Set<string>();
+    return (field.plots || []).map((p, idx) => {
       const coords = (p.geometry?.coordinates as number[][][]) || [];
       const area = p.properties?.area ?? computePolygonAreaHectares(coords);
+      let color = p.properties?.color;
+      if (color) {
+        usedColors.add(color);
+      } else {
+        color = pickAvailableColor(usedColors, idx);
+      }
       const ensuredId = p.id ?? `plot-mock-${idx}`;
       return {
         ...p,
         id: ensuredId,
-        properties: { ...(p.properties || {}), area },
+        properties: { ...(p.properties || {}), area, color },
       } as Plot;
-    })
-  );
+    });
+  });
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
 
   const handleSelectPlot = useCallback((plot: Plot) => setSelectedPlot(plot), []);
-  const { layerMapRef, handleFeatureGroupRef, removePlotLayer, featureGroup } = usePlotLayerSync({
+  const { layerMapRef, handleFeatureGroupRef, removePlotLayer, featureGroup, enablePlotGeometryEdit, disablePlotGeometryEdit } = usePlotLayerSync({
     plots,
     onSelectPlot: handleSelectPlot,
   });
+  const drawControlRef = useRef<L.Control.Draw | null>(null);
+  const [geometryEditingPlotId, setGeometryEditingPlotId] = useState<string | number | null>(null);
+
+  const getEditHandler = useCallback(() => {
+    const control = drawControlRef.current as unknown as {
+      _toolbars?: {
+        edit?: {
+          _modes?: {
+            edit?: { handler?: { enable?: () => void; disable?: () => void } };
+          };
+        };
+      };
+    };
+
+    return control?._toolbars?.edit?._modes?.edit?.handler;
+  }, []);
+
+  const stopPlotGeometryEdit = useCallback(() => {
+    const handler = getEditHandler();
+    if (handler?.disable) {
+      handler.disable();
+    }
+    disablePlotGeometryEdit();
+    setGeometryEditingPlotId(null);
+  }, [disablePlotGeometryEdit, getEditHandler]);
+
+  const startPlotGeometryEdit = useCallback((plot: Plot) => {
+    if (plot.id == null) return;
+
+    setSelectedPlot(null);
+    setEditingPlot(null);
+
+    const handler = getEditHandler();
+    if (handler?.enable) {
+      handler.enable();
+    }
+
+    disablePlotGeometryEdit();
+    enablePlotGeometryEdit(plot.id);
+    setGeometryEditingPlotId(plot.id);
+  }, [disablePlotGeometryEdit, enablePlotGeometryEdit, getEditHandler]);
+
+  useEffect(() => {
+    if (geometryEditingPlotId == null) return;
+    enablePlotGeometryEdit(geometryEditingPlotId);
+  }, [geometryEditingPlotId, enablePlotGeometryEdit, plots]);
 
   // Small internal types for layers created by draw/geojson
   type ILayerWithGeo = L.Layer & {
@@ -55,10 +137,20 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     removePlotLayer(id);
     setPlots((current) => current.filter((p) => (p.id == null ? true : String(p.id) !== String(id))));
     setSelectedPlot(null);
+    if (geometryEditingPlotId != null && String(geometryEditingPlotId) === String(id)) {
+      stopPlotGeometryEdit();
+    }
   };
 
-  // Centro (convertido a [Lat, Lng])
-  const mapCenter: LatLngTuple = computePolygonCentroid(field.boundary.geometry.coordinates);
+  // Centro dinámico: prioriza la parcela en edición geométrica, luego la seleccionada, por último el campo completo.
+  const fieldCenter = computePolygonCentroid(field.boundary.geometry.coordinates);
+  const activeGeometryPlot = geometryEditingPlotId != null
+    ? plots.find((plot) => plot.id != null && String(plot.id) === String(geometryEditingPlotId)) ?? null
+    : null;
+  const mapFocusPlot = activeGeometryPlot ?? selectedPlot;
+  const mapCenter: LatLngTuple = mapFocusPlot
+    ? computePolygonCentroid(mapFocusPlot.geometry.coordinates as number[][][])
+    : fieldCenter;
 
   // --- Manejadores de CRUD (leaflet-draw) ---
 
@@ -70,14 +162,29 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     newFeature.id = `plot-${Date.now()}`;
     const coords = (newFeature.geometry?.coordinates as number[][][]) || [];
     const newArea = computePolygonAreaHectares(coords);
-    newFeature.properties = {
-      name: "Nueva Parcela",
-      variety: "Sin Asignar",
-      area: newArea,
-    };
 
-    // Persistimos el nuevo plot; el hook sincronizará la capa canonical.
-    setPlots((currentPlots) => [...currentPlots, newFeature]);
+    setPlots((currentPlots) => {
+      const usedColors = new Set<string>(
+        currentPlots
+          .map((plot) => plot.properties?.color)
+          .filter((value): value is string => Boolean(value))
+      );
+      const color = pickAvailableColor(usedColors, currentPlots.length);
+      const nextFeature: Plot = {
+        ...newFeature,
+        properties: {
+          name: "Nueva Parcela",
+          variety: "Sin Asignar",
+          area: newArea,
+          color,
+        },
+      };
+
+      // Abrimos el modal para editar detalles con la referencia actualizada.
+      setEditingPlot(nextFeature);
+
+      return [...currentPlots, nextFeature];
+    });
 
     // Eliminamos la capa creada por Draw para evitar duplicados visuales/edición.
     if (featureGroup) {
@@ -85,9 +192,6 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     } else {
       layer.remove();
     }
-
-    // Abrimos el modal para editar detalles
-    setEditingPlot(newFeature);
   };
 
   const handleEdited = (e: LeafletEvent) => {
@@ -112,6 +216,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         );
       }
     });
+
+    stopPlotGeometryEdit();
   };
 
   const handleDeleted = (e: LeafletEvent) => {
@@ -131,6 +237,10 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     setPlots((currentPlots) =>
       currentPlots.filter((p) => (p.id == null ? true : !deletedPlotIds.includes(p.id)))
     );
+
+    if (deletedPlotIds.some((deletedId) => geometryEditingPlotId != null && String(deletedId) === String(geometryEditingPlotId))) {
+      stopPlotGeometryEdit();
+    }
   };
 
   // --- Manejador para el modal de Shadcn ---
@@ -164,6 +274,10 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
               onCreated={handleCreated}
               onEdited={handleEdited}
               onDeleted={handleDeleted}
+              onMounted={(control: L.Control.Draw) => {
+                drawControlRef.current = control;
+              }}
+              onEditStop={stopPlotGeometryEdit}
               draw={{
                 polygon: {
                   allowIntersection: false,
@@ -192,6 +306,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
           setSelectedPlot(null);
         }}
         onDelete={(plot) => handleDeletePlot(plot.id)}
+        onEditGeometry={(plot) => startPlotGeometryEdit(plot)}
       />
 
       <PlotEditDialog
@@ -199,6 +314,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         onUpdate={(plot) => setEditingPlot(plot)}
         onClose={() => setEditingPlot(null)}
         onSave={handleSavePlotDetails}
+        onEditGeometry={(plot) => startPlotGeometryEdit(plot)}
       />
     </>
   );
