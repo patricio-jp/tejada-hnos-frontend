@@ -161,12 +161,28 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       return;
     }
 
-    // Si estamos en modo seleccionar y clickeamos un polígono, seleccionarlo
-    if (mode === 'select' && info.object && info.layer?.id === 'polygon-layer') {
-      const index = data.features.indexOf(info.object);
-      setSelectedFeatureIndexes([index]);
-      onFeatureSelect?.(info.object, index);
-      console.log('¡Figura seleccionada!', info.object);
+    // Si estamos en modo seleccionar
+    if (mode === 'select') {
+      // Si clickeamos un polígono, seleccionarlo
+      if (info.object && info.layer?.id === 'polygon-layer') {
+        // Si es el field boundary, deseleccionar cualquier selección actual
+        if (info.object.properties?.isFieldBoundary) {
+          console.log('Click en el límite del campo - deseleccionando');
+          setSelectedFeatureIndexes([]);
+          onFeatureSelect?.(null, null);
+          return;
+        }
+        
+        const index = data.features.indexOf(info.object);
+        setSelectedFeatureIndexes([index]);
+        onFeatureSelect?.(info.object, index);
+        console.log('¡Figura seleccionada!', info.object);
+      } else {
+        // Click en área vacía: deseleccionar
+        setSelectedFeatureIndexes([]);
+        onFeatureSelect?.(null, null);
+        console.log('Figura deseleccionada (click en área vacía)');
+      }
     }
   }, [mode, data.features, draggingVertex, onFeatureSelect]);
 

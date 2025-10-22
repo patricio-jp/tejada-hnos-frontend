@@ -73,13 +73,6 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   // Handler para cuando se selecciona una parcela en el mapa
   const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
     if (feature && index !== null) {
-      // Verificar que no sea el boundary del campo
-      if (feature.properties?.isFieldBoundary) {
-        console.log('Seleccionaste el límite del campo (no editable)');
-        setSelectedPlot(null);
-        return;
-      }
-      
       // El índice 0 es el field boundary, así que restamos 1
       const plotIndex = index - 1;
       if (plotIndex >= 0 && plotIndex < plots.length) {
@@ -91,6 +84,13 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       setSelectedPlot(null);
     }
   }, [plots]);
+
+  // Handler para cerrar el sheet (deseleccionar manualmente)
+  const handleCloseSheet = useCallback(() => {
+    setSelectedPlot(null);
+    // Forzar actualización del mapa creando nueva referencia de plots
+    setPlots((current) => [...current]);
+  }, []);
 
   // Handler para eliminar una parcela
   const handleDeletePlot = useCallback((plot: Plot) => {
@@ -164,7 +164,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       <PlotDetailsSheet
         plot={selectedPlot}
         open={Boolean(selectedPlot)}
-        onClose={() => setSelectedPlot(null)}
+        onClose={handleCloseSheet}
         onEdit={(plot) => {
           setEditingPlot({ ...plot });
           setSelectedPlot(null);

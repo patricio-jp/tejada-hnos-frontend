@@ -49,6 +49,13 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
     }
   }, [fields]);
 
+  // Handler para cerrar el sheet (deseleccionar manualmente)
+  const handleCloseSheet = useCallback(() => {
+    setSelectedField(null);
+    // Forzar actualización del mapa creando nueva referencia de mapData
+    onFieldsChange((current) => [...current]);
+  }, [onFieldsChange]);
+
   // Handler para eliminar un campo
   const handleDeleteField = useCallback((field: Field) => {
     onFieldsChange((current) => current.filter((f) => f.id !== field.id));
@@ -133,7 +140,7 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
       <FieldDetailsSheet
         field={selectedField}
         open={Boolean(selectedField)}
-        onClose={() => setSelectedField(null)}
+        onClose={handleCloseSheet}
         onEdit={(field) => {
           setEditingField({ ...field });
           setSelectedField(null);
