@@ -49,7 +49,7 @@ const MAPTILER_STYLE_URL = `https://api.maptiler.com/maps/streets-v2/style.json?
 
 // --- 3. El Componente de React ---
 
-const MiMapaInteractivo: React.FC<InteractiveMapProps> = ({
+const InteractiveMap: React.FC<InteractiveMapProps> = ({
   initialData,
   onDataChange,
   editable = true,
@@ -556,4 +556,4 @@ const MiMapaInteractivo: React.FC<InteractiveMapProps> = ({
   );
 };
 
-export default MiMapaInteractivo;
+export default InteractiveMap;

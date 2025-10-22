@@ -1,4 +1,5 @@
-import type { LatLngTuple } from "leaflet";
+// Type for [latitude, longitude] tuple
+type LatLngTuple = [number, number];
 
 // Precise centroid for the exterior ring (coordinates in [lng, lat])
 export const computePolygonCentroid = (coords: number[][][]): LatLngTuple => {

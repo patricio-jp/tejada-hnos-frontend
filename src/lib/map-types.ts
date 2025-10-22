@@ -28,6 +28,7 @@ export type Plot = Feature<Polygon, PlotProperties>;
  */
 export interface FieldProperties {
   name: string;
+  color?: string;
   // Usaremos 'feature.id' para el ID del campo.
 }
 
