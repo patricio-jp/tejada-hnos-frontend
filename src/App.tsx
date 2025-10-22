@@ -59,6 +59,8 @@ const PaginaCargando = () => (
  */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
+const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
+const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -89,7 +91,12 @@ export default function App() {
                 <Route path=":fieldId" element={<ParcelaPage />} />
               </Route>
 
-              <Route path="activities" element={<PaginaNoImplementada />} />
+              {/* Rutas de Actividades */}
+              <Route path="activities">
+                <Route index element={<ActivitiesDashboard />} />
+                <Route path="list" element={<ActivitiesListPage />} />
+              </Route>
+
               <Route path="reports" element={<PaginaNoImplementada />} />
               <Route path="users" element={<PaginaNoImplementada />} />
               <Route path="settings" element={<PaginaNoImplementada />} />
