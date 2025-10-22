@@ -40,9 +40,23 @@ function NotFound() {
   )
 }
 
+function PaginaNoImplementada() {
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Página no implementada</h1>
+      <p className="mt-2">Esta página aún no ha sido implementada.</p>
+    </div>
+  )
+}
+
 const PaginaCargando = () => (
   <div className="container mx-auto py-10">Cargando...</div>
 );
+
+/**
+ * Carga diferida (lazy loading) de las páginas
+ * Para optimizar el rendimiento de la aplicación
+ */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 
@@ -55,31 +69,36 @@ import MapExample from './common/components/MapExample'
 export default function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route
-            path="/protected"
-            element={
-              <ProtectedRoute>
-                <Protected />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Suspense fallback={<PaginaCargando />}>
-          <Routes>
-            {/* Ruta para la lista de campos */}
-            <Route path="/fields" element={<CamposPage />} />
-            
-            {/* Ruta para el editor de parcelas */}
-            <Route path="/fields/:fieldId" element={<ParcelaPage />} />
-          </Routes>
-        </Suspense>
-    </Layout>
+      <Routes>
+        <Route path="login" element={<LoginPage />} />
+      </Routes>
+      {/* Rutas protegidas por autenticación */}
+      <ProtectedRoute>
+        <Layout>
+          {/* Suspense para carga diferida (lazy loading) */}
+          <Suspense fallback={<PaginaCargando />}>
+            <Routes>
+              <Route path="" element={<Home />} />
+              <Route path="about" element={<About />} />
+              <Route path="protected" element={<Protected />}/>
+              {/* Ruta para la lista de campos */}
+              <Route path="fields">
+                <Route index element={<CamposPage />} />
+                <Route path="list" element={<PaginaNoImplementada />} />
+                {/* Ruta para el editor de parcelas */}
+                <Route path=":fieldId" element={<ParcelaPage />} />
+              </Route>
+
+              <Route path="activities" element={<PaginaNoImplementada />} />
+              <Route path="reports" element={<PaginaNoImplementada />} />
+              <Route path="users" element={<PaginaNoImplementada />} />
+              <Route path="settings" element={<PaginaNoImplementada />} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+      </Layout>
+    </ProtectedRoute>
   </ThemeProvider>
   )
 }
