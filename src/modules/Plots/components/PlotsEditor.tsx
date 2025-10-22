@@ -9,6 +9,8 @@ import InteractiveMap from "@/common/components/InteractiveMap";
 import { plotsToFeatureCollection, featureCollectionToPlots } from "@/common/utils/plot-map-utils";
 import { PlotDetailsSheet } from "./PlotDetailsSheet";
 import { PlotEditDialog } from "./PlotEditDialog";
+import { Button } from "@/components/ui/button";
+import { PenTool } from "lucide-react";
 
 interface PlotsEditorProps {
   field: Field;
@@ -149,12 +151,26 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
 
   return (
     <>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Dibuja parcelas dentro del campo o selecciona una existente para ver sus detalles.
+        </div>
+        <Button
+          onClick={() => setMapMode('drawPolygon')}
+          variant={mapMode === 'drawPolygon' ? 'default' : 'outline'}
+        >
+          <PenTool className="mr-2 h-4 w-4" />
+          {mapMode === 'drawPolygon' ? 'Dibujando...' : 'Crear Nueva Parcela'}
+        </Button>
+      </div>
+
       <InteractiveMap
         initialData={combinedData}
         onDataChange={handleMapDataChange}
         onFeatureSelect={handleFeatureSelect}
         getPolygonColor={getPlotColor}
         availableModes={['view', 'drawPolygon', 'select', 'edit']}
+        visibleButtons={['view', 'select']}
         mode={mapMode}
         onModeChange={handleModeChange}
         editable={true}

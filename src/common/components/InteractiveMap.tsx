@@ -40,11 +40,17 @@ interface InteractiveMapProps {
     latitude: number;
     zoom: number;
   };
-  // Nuevos parámetros
-  availableModes?: Mode[]; // Modos disponibles (por defecto todos)
+  // Control de UI
+  showControls?: boolean; // Mostrar/ocultar TODO el panel de controles (default: true)
+  visibleButtons?: Mode[]; // Qué botones mostrar en el panel (default: todos los availableModes)
+  
+  // Control de funcionalidad
+  availableModes?: Mode[]; // Modos funcionalmente disponibles (por defecto todos)
   defaultMode?: Mode; // Modo inicial (por defecto 'view')
   mode?: Mode; // Modo controlado externamente (opcional)
   onModeChange?: (mode: Mode) => void; // Callback cuando cambia el modo
+  
+  // Personalización
   getPolygonColor?: (feature: Feature, isSelected: boolean) => [number, number, number, number]; // Color personalizado por feature
 }
 
@@ -62,6 +68,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onFeatureSelect,
   editable = true,
   initialViewState: initialViewStateProp,
+  showControls = true, // Por defecto mostrar controles
+  visibleButtons, // Por defecto undefined = mostrar todos los modos disponibles
   availableModes = ['view', 'drawPolygon', 'select', 'edit'], // Por defecto todos los modos
   defaultMode = 'view', // Por defecto modo vista
   mode: externalMode, // Modo controlado externamente
@@ -132,10 +140,20 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, [initialData]);
 
-  // Helper para verificar si un modo está disponible
+  // Helper para verificar si un modo está disponible funcionalmente
   const isModeAvailable = useCallback((modeToCheck: Mode) => {
     return availableModes.includes(modeToCheck);
   }, [availableModes]);
+
+  // Helper para verificar si un botón debe ser visible
+  const isButtonVisible = useCallback((modeToCheck: Mode) => {
+    // Si visibleButtons está definido, usar eso
+    if (visibleButtons !== undefined) {
+      return visibleButtons.includes(modeToCheck);
+    }
+    // Si no, mostrar todos los modos disponibles
+    return availableModes.includes(modeToCheck);
+  }, [visibleButtons, availableModes]);
 
   // --- 4. Handlers (Lógica de dibujo) ---
 
@@ -492,162 +510,166 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       <div style={{ height: '600px', width: '100%', position: 'relative' }}>
         
         {/* --- Panel de Control con Shadcn/ui --- */}
-        <Card className="absolute top-4 left-4 z-10 w-[280px]">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MapPin className="mr-2 h-5 w-5" />
-              Controles del Mapa
-            </CardTitle>
-            <CardDescription>
-              Usa los botones para gestionar las figuras.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            
-            {!editable ? (
-              <div className="text-sm text-muted-foreground p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                Modo solo lectura. La edición está deshabilitada.
-              </div>
-            ) : mode === 'drawPolygon' ? (
-              <>
-                <div className="text-sm text-muted-foreground mb-2 p-2 bg-blue-50 dark:bg-blue-950 rounded">
-                  Haz clic en el mapa para añadir puntos. Mínimo 3 puntos.
+        {showControls && (
+          <Card className="absolute top-4 left-4 z-10 w-[280px]">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="mr-2 h-5 w-5" />
+                Controles del Mapa
+              </CardTitle>
+              <CardDescription>
+                Usa los botones para gestionar las figuras.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              
+              {!editable ? (
+                <div className="text-sm text-muted-foreground p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                  Modo solo lectura. La edición está deshabilitada.
                 </div>
-                <Button
-                  variant="default"
-                  onClick={finishDrawing}
-                  disabled={drawingPoints.length < 3}
-                >
-                  <PenTool className="mr-2 h-4 w-4" /> Finalizar Polígono ({drawingPoints.length} puntos)
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={cancelDrawing}
-                >
-                  Cancelar
-                </Button>
-              </>
-            ) : (
-              <>
-                {isModeAvailable('drawPolygon') && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        onClick={() => changeMode('drawPolygon')}
-                      >
-                        <PenTool className="mr-2 h-4 w-4" /> Crear Polígono
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Dibuja una nueva figura poligonal</TooltipContent>
-                  </Tooltip>
-                )}
-
-                {isModeAvailable('select') && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={mode === 'select' ? 'default' : 'outline'}
-                        onClick={() => {
-                          changeMode('select');
-                          if (mode === 'edit') {
-                            // Al salir del modo edición, mantener la selección
-                          }
-                        }}
-                        disabled={data.features.length === 0}
-                      >
-                        <MapPin className="mr-2 h-4 w-4" /> Seleccionar
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Haz clic en un polígono para seleccionarlo
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {isModeAvailable('edit') && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={mode === 'edit' ? 'default' : 'outline'}
-                        onClick={() => changeMode('edit')}
-                        disabled={selectedFeatureIndexes.length === 0}
-                      >
-                        <Edit className="mr-2 h-4 w-4" /> Editar Vértices
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Arrastra los vértices rojos para editar el polígono seleccionado
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {(isModeAvailable('edit')) && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={selectedFeatureIndexes.length > 0 ? 'destructive' : 'outline'}
-                        onClick={handleDelete}
-                        disabled={selectedFeatureIndexes.length === 0}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Selección
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Elimina la figura seleccionada</TooltipContent>
-                  </Tooltip>
-                )}
-
-                {isModeAvailable('view') && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={mode === 'view' ? 'default' : 'outline'}
-                        onClick={() => {
-                          changeMode('view');
-                          setSelectedFeatureIndexes([]);
-                        }}
-                      >
-                        <Eye className="mr-2 h-4 w-4" /> Modo Ver
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Desactiva la edición y el dibujo</TooltipContent>
-                  </Tooltip>
-                )}
-              </>
-            )}
-
-            {/* Información de estado */}
-            <div className="mt-2 pt-2 border-t">
-              <p className="text-sm text-muted-foreground">
-                Modo Actual: <span className="font-medium text-primary">{mode}</span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Polígonos: <span className="font-medium text-primary">{data.features.length}</span>
-              </p>
-              {selectedFeatureIndexes.length > 0 && (
+              ) : mode === 'drawPolygon' ? (
                 <>
-                  <p className="text-sm text-muted-foreground">
-                    Seleccionado:{' '}
-                    <span className="font-medium text-primary">
-                      Polígono {selectedFeatureIndexes[0] + 1}
-                    </span>
-                  </p>
-                  {mode === 'edit' && !draggingVertex && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      💡 Arrastra los puntos rojos para editar los vértices
-                    </p>
+                  <div className="text-sm text-muted-foreground mb-2 p-2 bg-blue-50 dark:bg-blue-950 rounded">
+                    Haz clic en el mapa para añadir puntos. Mínimo 3 puntos.
+                  </div>
+                  <Button
+                    variant="default"
+                    onClick={finishDrawing}
+                    disabled={drawingPoints.length < 3}
+                  >
+                    <PenTool className="mr-2 h-4 w-4" /> Finalizar Polígono ({drawingPoints.length} puntos)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={cancelDrawing}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isButtonVisible('drawPolygon') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          onClick={() => changeMode('drawPolygon')}
+                          disabled={!isModeAvailable('drawPolygon')}
+                        >
+                          <PenTool className="mr-2 h-4 w-4" /> Crear Polígono
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Dibuja una nueva figura poligonal</TooltipContent>
+                    </Tooltip>
                   )}
-                  {draggingVertex && (
-                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                      ✏️ Arrastrando vértice {draggingVertex.vertexIndex + 1}...
-                    </p>
+
+                  {isButtonVisible('select') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={mode === 'select' ? 'default' : 'outline'}
+                          onClick={() => {
+                            changeMode('select');
+                            if (mode === 'edit') {
+                              // Al salir del modo edición, mantener la selección
+                            }
+                          }}
+                          disabled={data.features.length === 0 || !isModeAvailable('select')}
+                        >
+                          <MapPin className="mr-2 h-4 w-4" /> Seleccionar
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Haz clic en un polígono para seleccionarlo
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {isButtonVisible('edit') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={mode === 'edit' ? 'default' : 'outline'}
+                          onClick={() => changeMode('edit')}
+                          disabled={selectedFeatureIndexes.length === 0 || !isModeAvailable('edit')}
+                        >
+                          <Edit className="mr-2 h-4 w-4" /> Editar Vértices
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Arrastra los vértices rojos para editar el polígono seleccionado
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {isButtonVisible('edit') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={selectedFeatureIndexes.length > 0 ? 'destructive' : 'outline'}
+                          onClick={handleDelete}
+                          disabled={selectedFeatureIndexes.length === 0}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar Selección
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Elimina la figura seleccionada</TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {isButtonVisible('view') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={mode === 'view' ? 'default' : 'outline'}
+                          onClick={() => {
+                            changeMode('view');
+                            setSelectedFeatureIndexes([]);
+                          }}
+                          disabled={!isModeAvailable('view')}
+                        >
+                          <Eye className="mr-2 h-4 w-4" /> Modo Ver
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Desactiva la edición y el dibujo</TooltipContent>
+                    </Tooltip>
                   )}
                 </>
               )}
-            </div>
-            
-          </CardContent>
-        </Card>
+
+              {/* Información de estado */}
+              <div className="mt-2 pt-2 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Modo Actual: <span className="font-medium text-primary">{mode}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Polígonos: <span className="font-medium text-primary">{data.features.length}</span>
+                </p>
+                {selectedFeatureIndexes.length > 0 && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Seleccionado:{' '}
+                      <span className="font-medium text-primary">
+                        Polígono {selectedFeatureIndexes[0] + 1}
+                      </span>
+                    </p>
+                    {mode === 'edit' && !draggingVertex && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        💡 Arrastra los puntos rojos para editar los vértices
+                      </p>
+                    )}
+                    {draggingVertex && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        ✏️ Arrastrando vértice {draggingVertex.vertexIndex + 1}...
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+              
+            </CardContent>
+          </Card>
+        )}
 
         {/* --- El Mapa (Deck.gl + MapLibre) --- */}
         <DeckGL

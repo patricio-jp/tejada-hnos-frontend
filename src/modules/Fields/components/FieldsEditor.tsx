@@ -10,6 +10,8 @@ import { calculateCenter } from "@/common/utils/map-utils";
 import { hexToRGBA } from "@/common/utils/color-utils";
 import { FieldDetailsSheet } from "./FieldDetailsSheet";
 import { FieldEditDialog } from "./FieldEditDialog";
+import { Button } from "@/components/ui/button";
+import { PenTool } from "lucide-react";
 
 interface FieldsEditorProps {
   fields: Field[];
@@ -19,7 +21,7 @@ interface FieldsEditorProps {
 export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
   const [selectedField, setSelectedField] = useState<Field | null>(null);
   const [editingField, setEditingField] = useState<Field | null>(null);
-  const [mapMode, setMapMode] = useState<'view' | 'select' | 'edit'>('select');
+  const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
   const navigate = useNavigate();
 
   // Convertir fields a FeatureCollection para el mapa (memoizado para evitar recreaciones innecesarias)
@@ -111,10 +113,7 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
 
   // Handler para cuando cambia el modo del mapa
   const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {
-    // Solo aceptar modos que usamos
-    if (newMode === 'view' || newMode === 'select' || newMode === 'edit') {
-      setMapMode(newMode);
-    }
+    setMapMode(newMode);
   }, []);
 
   return (
@@ -123,6 +122,13 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
         <div className="text-sm text-muted-foreground">
           Dibuja campos en el mapa usando el modo de dibujo, o selecciona uno existente para ver sus detalles.
         </div>
+        <Button
+          onClick={() => setMapMode('drawPolygon')}
+          variant={mapMode === 'drawPolygon' ? 'default' : 'outline'}
+        >
+          <PenTool className="mr-2 h-4 w-4" />
+          {mapMode === 'drawPolygon' ? 'Dibujando...' : 'Crear Nuevo Campo'}
+        </Button>
       </div>
 
       <InteractiveMap
@@ -130,7 +136,8 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
         onDataChange={handleMapDataChange}
         onFeatureSelect={handleFeatureSelect}
         getPolygonColor={getFieldColor}
-        availableModes={['view', 'select', 'edit']}
+        availableModes={['view', 'drawPolygon', 'select', 'edit']}
+        visibleButtons={['view', 'select']}
         mode={mapMode}
         onModeChange={handleModeChange}
         editable={true}
