@@ -119,7 +119,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       )
     );
 
-    setSelectedPlot(editingPlot);
+    //setSelectedPlot(editingPlot);
     setEditingPlot(null);
   }, [editingPlot]);
 
@@ -147,6 +147,14 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   // Handler para cuando cambia el modo del mapa
   const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {
     setMapMode(newMode);
+  }, []);
+
+  // Handler para cuando se cierra el diálogo de edición (para deseleccionar)
+  const handleCloseEditDialog = useCallback(() => {
+    setEditingPlot(null);
+    setSelectedPlot(null);
+    // Forzar actualización del mapa creando nueva referencia de plots
+    setPlots((current) => [...current]);
   }, []);
 
   return (
@@ -192,7 +200,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       <PlotEditDialog
         plot={editingPlot}
         onUpdate={(plot) => setEditingPlot(plot)}
-        onClose={() => setEditingPlot(null)}
+        onClose={handleCloseEditDialog}
         onSave={handleSavePlotDetails}
         onEditGeometry={() => {
           setEditingPlot(null);

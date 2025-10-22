@@ -91,7 +91,7 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
       )
     );
 
-    setSelectedField(editingField);
+    //setSelectedField(editingField);
     setEditingField(null);
   }, [editingField, onFieldsChange]);
 
@@ -115,6 +115,14 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
   const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {
     setMapMode(newMode);
   }, []);
+
+  // Handler para cuando se cierra el diálogo de edición (para deseleccionar)
+  const handleCloseEditDialog = useCallback(() => {
+    setSelectedField(null);
+    setEditingField(null);
+    // Forzar actualización del mapa creando nueva referencia de mapData
+    onFieldsChange((current) => [...current]);
+  }, [onFieldsChange]);
 
   return (
     <div className="grid gap-4">
@@ -160,7 +168,7 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
       <FieldEditDialog
         field={editingField}
         onUpdate={(field) => setEditingField(field)}
-        onClose={() => setEditingField(null)}
+        onClose={handleCloseEditDialog}
         onSave={handleSaveFieldDetails}
         onEditGeometry={() => {
           setEditingField(null);
