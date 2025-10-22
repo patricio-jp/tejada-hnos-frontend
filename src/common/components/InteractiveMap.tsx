@@ -28,17 +28,22 @@ import { PenTool, Edit, Trash2, Eye, MapPin } from 'lucide-react'; // Iconos
 
 // --- 1. Tipos y Constantes ---
 
-type Mode = 'view' | 'drawPolygon' | 'modify';
+type Mode = 'view' | 'drawPolygon' | 'select' | 'edit';
 
 interface InteractiveMapProps {
   initialData?: FeatureCollection;
   onDataChange?: (data: FeatureCollection) => void;
+  onFeatureSelect?: (feature: Feature | null, index: number | null) => void;
   editable?: boolean;
   initialViewState?: {
     longitude: number;
     latitude: number;
     zoom: number;
   };
+  // Nuevos parámetros
+  availableModes?: Mode[]; // Modos disponibles (por defecto todos)
+  defaultMode?: Mode; // Modo inicial (por defecto 'view')
+  getPolygonColor?: (feature: Feature, isSelected: boolean) => [number, number, number, number]; // Color personalizado por feature
 }
 
 // --- 2. Configuración de Maptiler ---
@@ -52,8 +57,12 @@ const MAPTILER_STYLE_URL = `https://api.maptiler.com/maps/streets-v2/style.json?
 const InteractiveMap: React.FC<InteractiveMapProps> = ({
   initialData,
   onDataChange,
+  onFeatureSelect,
   editable = true,
   initialViewState: initialViewStateProp,
+  availableModes = ['view', 'drawPolygon', 'select', 'edit'], // Por defecto todos los modos
+  defaultMode = 'view', // Por defecto modo vista
+  getPolygonColor, // Función opcional para color personalizado
 }) => {
   // --- Estados de React ---
   const mapRef = useRef<MapRef>(null);
@@ -76,7 +85,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   );
 
   // ESTADO CLAVE: El modo de edición (controlado por nuestros botones)
-  const [mode, setMode] = useState<Mode>('view');
+  const [mode, setMode] = useState<Mode>(defaultMode);
 
   // Estado para los índices de las figuras seleccionadas
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
@@ -96,12 +105,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Ref para trackear si el mouse está presionado
   const isMouseDownRef = useRef(false);
 
+  // Helper para verificar si un modo está disponible
+  const isModeAvailable = useCallback((modeToCheck: Mode) => {
+    return availableModes.includes(modeToCheck);
+  }, [availableModes]);
+
   // --- 4. Handlers (Lógica de dibujo) ---
 
   // Handler para clicks en DeckGL (para dibujar y seleccionar)
   const handleDeckClick = useCallback((info: any, event: any) => {
     // Si clickeamos un vértice, NO hacer nada aquí (se maneja en onDrag)
-    if (info.layer?.id === 'edit-vertices-layer' && info.object && mode === 'modify') {
+    if (info.layer?.id === 'edit-vertices-layer' && info.object && mode === 'edit') {
       // Prevenir el comportamiento por defecto
       event?.stopPropagation?.();
       return false;
@@ -120,13 +134,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       return;
     }
 
-    // Si estamos en modo modificar y clickeamos un polígono, seleccionarlo
-    if (mode === 'modify' && info.object && info.layer?.id === 'polygon-layer') {
+    // Si estamos en modo seleccionar y clickeamos un polígono, seleccionarlo
+    if (mode === 'select' && info.object && info.layer?.id === 'polygon-layer') {
       const index = data.features.indexOf(info.object);
       setSelectedFeatureIndexes([index]);
+      onFeatureSelect?.(info.object, index);
       console.log('¡Figura seleccionada!', info.object);
     }
-  }, [mode, data.features, draggingVertex]);
+  }, [mode, data.features, draggingVertex, onFeatureSelect]);
 
   // Función para completar el polígono
   const finishDrawing = useCallback(() => {
@@ -159,7 +174,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     onDataChange?.(newData);
 
     setDrawingPoints([]);
-    setMode('modify');
+    setMode('select');
   }, [drawingPoints, data.features, onDataChange]);
 
   // Función para cancelar el dibujo
@@ -190,7 +205,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Handler para hover sobre el mapa (para actualizar drag)
   const handleVertexDrag = useCallback((info: any) => {
-    if (!info.coordinate || mode !== 'modify') return;
+    if (!info.coordinate || mode !== 'edit') return;
     
     console.log('🔄 Drag event:', { draggingVertex, isMouseDown: isMouseDownRef.current, coordinate: info.coordinate });
     
@@ -250,7 +265,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Handler para detectar el inicio de drag
   const handleDragStart = useCallback((info: any) => {
     // Solo iniciar drag si es un vértice
-    if (info.layer?.id === 'edit-vertices-layer' && info.object && mode === 'modify') {
+    if (info.layer?.id === 'edit-vertices-layer' && info.object && mode === 'edit') {
       const vertex = info.object as any;
       console.log('🎯 Inicio de drag en vértice:', vertex);
       isMouseDownRef.current = true;
@@ -292,13 +307,61 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     filled: true,
     wireframe: true,
     lineWidthMinPixels: 2,
-    getFillColor: (d: Feature) => 
-      selectedFeatureIndexes.includes(data.features.indexOf(d)) 
-        ? [255, 100, 100, 100] // Rojo si está seleccionado
-        : [0, 100, 255, 100],   // Azul normal
-    getLineColor: [0, 0, 255, 255],
-    getLineWidth: 2,
-  }), [data, selectedFeatureIndexes]);
+    getFillColor: (d: Feature) => {
+      // Si es field boundary, sin relleno (transparente)
+      if (d.properties?.isFieldBoundary) {
+        return [0, 0, 0, 0]; // Totalmente transparente
+      }
+      
+      const isSelected = selectedFeatureIndexes.includes(data.features.indexOf(d));
+      
+      // Si hay función personalizada de color, usarla
+      if (getPolygonColor) {
+        return getPolygonColor(d, isSelected);
+      }
+      
+      // Colores por defecto
+      if (isSelected) {
+        return [255, 100, 100, 100]; // Rojo si está seleccionado
+      }
+      return [0, 100, 255, 100]; // Azul normal
+    },
+    getLineColor: (d: Feature) => {
+      // Si es field boundary, línea gris
+      if (d.properties?.isFieldBoundary) {
+        return [100, 100, 100, 200]; // Gris oscuro
+      }
+      
+      // Si tiene color personalizado, usar un tono más oscuro para el borde
+      if (getPolygonColor && d.properties?.color) {
+        const customColor = getPolygonColor(d, false);
+        // Hacer el borde más oscuro y opaco
+        return [
+          Math.max(0, customColor[0] - 50),
+          Math.max(0, customColor[1] - 50),
+          Math.max(0, customColor[2] - 50),
+          255
+        ];
+      }
+      
+      // Normal, línea azul
+      return [0, 0, 255, 255];
+    },
+    getLineWidth: (d: Feature) => {
+      // Si es field boundary, línea más delgada
+      if (d.properties?.isFieldBoundary) {
+        return 1.5;
+      }
+      return 2;
+    },
+    getDashArray: (d: Feature) => {
+      // Si es field boundary, línea punteada
+      if (d.properties?.isFieldBoundary) {
+        return [5, 5]; // Patrón de guiones: 5px línea, 5px espacio
+      }
+      return [0, 0]; // Sin guiones para polígonos normales
+    },
+  }), [data, selectedFeatureIndexes, getPolygonColor]);
 
   // Capa para mostrar el polígono que se está dibujando
   const drawingLayer = useMemo(() => 
@@ -339,7 +402,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Capa para mostrar vértices editables del polígono seleccionado
   const editVerticesLayer = useMemo(() => {
-    if (mode !== 'modify' || selectedFeatureIndexes.length === 0) return null;
+    if (mode !== 'edit' || selectedFeatureIndexes.length === 0) return null;
     
     const selectedFeature = data.features[selectedFeatureIndexes[0]];
     if (!selectedFeature || selectedFeature.geometry.type !== 'Polygon') return null;
@@ -423,60 +486,90 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
               </>
             ) : (
               <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={() => setMode('drawPolygon')}
-                    >
-                      <PenTool className="mr-2 h-4 w-4" /> Crear Polígono
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Dibuja una nueva figura poligonal</TooltipContent>
-                </Tooltip>
+                {isModeAvailable('drawPolygon') && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={() => setMode('drawPolygon')}
+                      >
+                        <PenTool className="mr-2 h-4 w-4" /> Crear Polígono
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Dibuja una nueva figura poligonal</TooltipContent>
+                  </Tooltip>
+                )}
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={mode === 'modify' ? 'default' : 'outline'}
-                      onClick={() => setMode('modify')}
-                      disabled={data.features.length === 0}
-                    >
-                      <Edit className="mr-2 h-4 w-4" /> Seleccionar/Editar
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Selecciona polígonos y arrastra los vértices rojos para editarlos
-                  </TooltipContent>
-                </Tooltip>
+                {isModeAvailable('select') && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={mode === 'select' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setMode('select');
+                          if (mode === 'edit') {
+                            // Al salir del modo edición, mantener la selección
+                          }
+                        }}
+                        disabled={data.features.length === 0}
+                      >
+                        <MapPin className="mr-2 h-4 w-4" /> Seleccionar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Haz clic en un polígono para seleccionarlo
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={selectedFeatureIndexes.length > 0 ? 'destructive' : 'outline'}
-                      onClick={handleDelete}
-                      disabled={selectedFeatureIndexes.length === 0}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar Selección
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Elimina la figura seleccionada</TooltipContent>
-                </Tooltip>
+                {isModeAvailable('edit') && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={mode === 'edit' ? 'default' : 'outline'}
+                        onClick={() => setMode('edit')}
+                        disabled={selectedFeatureIndexes.length === 0}
+                      >
+                        <Edit className="mr-2 h-4 w-4" /> Editar Vértices
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Arrastra los vértices rojos para editar el polígono seleccionado
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={mode === 'view' ? 'default' : 'outline'}
-                      onClick={() => {
-                        setMode('view');
-                        setSelectedFeatureIndexes([]);
-                      }}
-                    >
-                      <Eye className="mr-2 h-4 w-4" /> Modo Ver
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Desactiva la edición y el dibujo</TooltipContent>
-                </Tooltip>
+                {(isModeAvailable('edit')) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={selectedFeatureIndexes.length > 0 ? 'destructive' : 'outline'}
+                        onClick={handleDelete}
+                        disabled={selectedFeatureIndexes.length === 0}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Eliminar Selección
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Elimina la figura seleccionada</TooltipContent>
+                  </Tooltip>
+                )}
+
+                {isModeAvailable('view') && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={mode === 'view' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setMode('view');
+                          setSelectedFeatureIndexes([]);
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> Modo Ver
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Desactiva la edición y el dibujo</TooltipContent>
+                  </Tooltip>
+                )}
               </>
             )}
 
@@ -496,7 +589,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       Polígono {selectedFeatureIndexes[0] + 1}
                     </span>
                   </p>
-                  {mode === 'modify' && !draggingVertex && (
+                  {mode === 'edit' && !draggingVertex && (
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                       💡 Arrastra los puntos rojos para editar los vértices
                     </p>
@@ -541,8 +634,9 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           onDragEnd={handleDragEnd} // Detectar fin de drag
           getCursor={({ isHovering }) => {
             if (draggingVertex) return 'grabbing';
-            if (isHovering && mode === 'modify') return 'grab';
+            if (isHovering && mode === 'edit') return 'grab';
             if (mode === 'drawPolygon') return 'crosshair';
+            if (mode === 'select') return 'pointer';
             return 'default';
           }}
         >

@@ -3,10 +3,11 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
 import type { Field } from "@/lib/map-types";
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, Feature } from "geojson";
 import InteractiveMap from "@/common/components/InteractiveMap";
 import { fieldsToFeatureCollection, featureCollectionToFields } from "@/common/utils/field-map-utils";
 import { calculateCenter } from "@/common/utils/map-utils";
+import { hexToRGBA } from "@/common/utils/color-utils";
 import { FieldDetailsSheet } from "./FieldDetailsSheet";
 import { FieldEditDialog } from "./FieldEditDialog";
 
@@ -29,6 +30,20 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
     const updatedFields = featureCollectionToFields(featureCollection, fields);
     onFieldsChange(() => updatedFields);
   }, [fields, onFieldsChange]);
+
+  // Handler para cuando se selecciona un campo en el mapa
+  const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
+    if (feature && index !== null) {
+      // Encontrar el campo correspondiente
+      const field = fields[index];
+      if (field) {
+        setSelectedField(field);
+        console.log('Campo seleccionado:', field.boundary.properties?.name || field.id);
+      }
+    } else {
+      setSelectedField(null);
+    }
+  }, [fields]);
 
   // Handler para eliminar un campo
   const handleDeleteField = useCallback((field: Field) => {
@@ -59,6 +74,22 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
     setEditingField(null);
   }, [editingField, onFieldsChange]);
 
+  // Función para obtener el color del polígono
+  const getFieldColor = useCallback((feature: Feature, isSelected: boolean): [number, number, number, number] => {
+    // Si está seleccionado, usar color rojo semi-transparente
+    if (isSelected) {
+      return [255, 100, 100, 120];
+    }
+    
+    // Si el feature tiene un color personalizado, usarlo
+    if (feature.properties?.color) {
+      return hexToRGBA(feature.properties.color, 100);
+    }
+    
+    // Color por defecto (azul)
+    return [0, 100, 255, 100];
+  }, []);
+
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
@@ -70,6 +101,10 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
       <InteractiveMap
         initialData={mapData}
         onDataChange={handleMapDataChange}
+        onFeatureSelect={handleFeatureSelect}
+        getPolygonColor={getFieldColor}
+        availableModes={['view', 'select']}
+        defaultMode="select"
         editable={true}
         initialViewState={initialViewState}
       />

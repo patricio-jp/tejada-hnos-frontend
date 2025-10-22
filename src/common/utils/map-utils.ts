@@ -115,7 +115,7 @@ export function calculateCenter(featureCollection: FeatureCollection): { longitu
   const maxDiff = Math.max(lngDiff, latDiff);
 
   // Fórmula aproximada para calcular el zoom
-  const zoom = maxDiff > 0.1 ? 10 : maxDiff > 0.05 ? 12 : maxDiff > 0.01 ? 14 : 15;
+  const zoom = maxDiff > 0.1 ? 10 : maxDiff > 0.05 ? 12 : maxDiff > 0.01 ? 13 : 14;
 
   return { longitude, latitude, zoom };
 }
