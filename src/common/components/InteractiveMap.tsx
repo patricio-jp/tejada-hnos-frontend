@@ -268,14 +268,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const handleVertexDrag = useCallback((info: any) => {
     if (!info.coordinate || mode !== 'edit') return;
     
-    console.log('🔄 Drag event:', { draggingVertex, isMouseDown: isMouseDownRef.current, coordinate: info.coordinate });
-    
     // Si tenemos un vértice seleccionado para drag
     if (draggingVertex) {
       const { featureIndex, vertexIndex } = draggingVertex;
       const feature = data.features[featureIndex];
-      
-      console.log('📍 Actualizando vértice', vertexIndex, 'a coordenadas:', info.coordinate);
       
       if (feature && feature.geometry.type === 'Polygon') {
         const coordinates = [...feature.geometry.coordinates[0]];
@@ -298,7 +294,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           },
         };
 
-        // Actualizar el estado
+        // Actualizar el estado (solo visual, no se propaga aún)
         const newFeatures = [...data.features];
         newFeatures[featureIndex] = updatedFeature;
 
@@ -307,7 +303,6 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           features: newFeatures,
         };
 
-        console.log('💾 Nuevas coordenadas del polígono:', coordinates);
         setData(newData);
       }
     }
@@ -316,19 +311,58 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Handler para cuando se suelta el mouse (fin de drag)
   const handleMouseUp = useCallback(() => {
     if (draggingVertex) {
-      console.log('✅ Drag finalizado');
       isMouseDownRef.current = false;
-      onDataChange?.(data);
       setDraggingVertex(null);
+      // NO llamar onDataChange aquí para no salir del modo edición
     }
-  }, [draggingVertex, data, onDataChange]);
+  }, [draggingVertex]);
   
   // Handler para detectar el inicio de drag
   const handleDragStart = useCallback((info: any) => {
+    // Si clickeamos un midpoint, insertar nuevo vértice
+    if (info.layer?.id === 'midpoint-layer' && info.object && mode === 'edit') {
+      const midpoint = info.object as any;
+      const { featureIndex, afterVertexIndex, position } = midpoint;
+      
+      const feature = data.features[featureIndex];
+      if (feature && feature.geometry.type === 'Polygon') {
+        const coordinates = [...feature.geometry.coordinates[0]];
+        // Insertar el nuevo vértice después del vértice indicado
+        coordinates.splice(afterVertexIndex + 1, 0, position);
+        
+        // Actualizar también el último punto (cierre del polígono)
+        coordinates[coordinates.length - 1] = coordinates[0];
+        
+        const updatedFeature: Feature<Polygon> = {
+          ...feature,
+          properties: feature.properties,
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates],
+          },
+        };
+        
+        const newFeatures = [...data.features];
+        newFeatures[featureIndex] = updatedFeature;
+        
+        setData({
+          type: 'FeatureCollection',
+          features: newFeatures,
+        });
+        
+        // Iniciar drag del nuevo vértice
+        isMouseDownRef.current = true;
+        setDraggingVertex({
+          featureIndex,
+          vertexIndex: afterVertexIndex + 1,
+        });
+      }
+      return true;
+    }
+    
     // Solo iniciar drag si es un vértice
     if (info.layer?.id === 'edit-vertices-layer' && info.object && mode === 'edit') {
       const vertex = info.object as any;
-      console.log('🎯 Inicio de drag en vértice:', vertex);
       isMouseDownRef.current = true;
       setDraggingVertex({
         featureIndex: vertex.featureIndex,
@@ -337,17 +371,23 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       return true; // Indicar que manejamos el drag
     }
     return false;
-  }, [mode]);
+  }, [mode, data]);
   
   // Handler para cuando termina el drag
   const handleDragEnd = useCallback(() => {
     if (draggingVertex) {
-      console.log('✅ Drag finalizado (DragEnd)');
       isMouseDownRef.current = false;
-      onDataChange?.(data);
       setDraggingVertex(null);
+      // NO llamar onDataChange aquí para no salir del modo edición
     }
-  }, [draggingVertex, data, onDataChange]);
+  }, [draggingVertex]);
+  
+  // Handler para guardar cambios de geometría
+  const handleSaveGeometry = useCallback(() => {
+    onDataChange?.(data);
+    changeMode('select');
+    console.log('💾 Geometría guardada');
+  }, [data, onDataChange, changeMode]);
   
   // Effect para agregar/remover event listener de mouseup global
   useEffect(() => {
@@ -499,9 +539,50 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     });
   }, [mode, selectedFeatureIndexes, data, draggingVertex]);
 
+  // Capa para mostrar puntos medios (para insertar nuevos vértices)
+  const midpointLayer = useMemo(() => {
+    if (mode !== 'edit' || selectedFeatureIndexes.length === 0 || draggingVertex) return null;
+    
+    const selectedFeature = data.features[selectedFeatureIndexes[0]];
+    if (!selectedFeature || selectedFeature.geometry.type !== 'Polygon') return null;
+    
+    const coordinates = selectedFeature.geometry.coordinates[0];
+    const vertices = coordinates.slice(0, -1);
+    
+    // Calcular puntos medios entre cada par de vértices
+    const midpoints = vertices.map((vertex, i) => {
+      const nextVertex = vertices[(i + 1) % vertices.length];
+      return {
+        position: [
+          (vertex[0] + nextVertex[0]) / 2,
+          (vertex[1] + nextVertex[1]) / 2
+        ] as Position,
+        afterVertexIndex: i,
+        featureIndex: selectedFeatureIndexes[0],
+        isMidpoint: true,
+      };
+    });
+    
+    return new ScatterplotLayer({
+      id: 'midpoint-layer',
+      data: midpoints,
+      pickable: true,
+      filled: true,
+      radiusMinPixels: 6,
+      radiusMaxPixels: 6,
+      getPosition: (d: { position: Position }) => d.position as [number, number],
+      getFillColor: [100, 200, 255, 200], // Azul claro
+      getLineColor: [255, 255, 255, 255],
+      lineWidthMinPixels: 1.5,
+      stroked: true,
+      autoHighlight: true,
+      highlightColor: [100, 200, 255, 255],
+    });
+  }, [mode, selectedFeatureIndexes, data, draggingVertex]);
+
   const layers = useMemo(() => 
-    [polygonLayer, drawingLayer, drawingPointsLayer, editVerticesLayer].filter(Boolean)
-  , [polygonLayer, drawingLayer, drawingPointsLayer, editVerticesLayer]);
+    [polygonLayer, drawingLayer, drawingPointsLayer, editVerticesLayer, midpointLayer].filter(Boolean)
+  , [polygonLayer, drawingLayer, drawingPointsLayer, editVerticesLayer, midpointLayer]);
 
   // --- 6. Renderizado (JSX) ---
   return (
@@ -585,11 +666,28 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     </Tooltip>
                   )}
 
-                  {isButtonVisible('edit') && (
+                  {mode === 'edit' && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant={mode === 'edit' ? 'default' : 'outline'}
+                          variant="default"
+                          onClick={handleSaveGeometry}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Edit className="mr-2 h-4 w-4" /> Guardar Geometría
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Guarda los cambios realizados en la geometría
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
+                  {isButtonVisible('edit') && mode !== 'edit' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
                           onClick={() => changeMode('edit')}
                           disabled={selectedFeatureIndexes.length === 0 || !isModeAvailable('edit')}
                         >
@@ -654,9 +752,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       </span>
                     </p>
                     {mode === 'edit' && !draggingVertex && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        💡 Arrastra los puntos rojos para editar los vértices
-                      </p>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
+                        <p>� Arrastra los puntos rojos para mover vértices</p>
+                        <p>🔵 Haz clic en los puntos azules para añadir vértices</p>
+                      </div>
                     )}
                     {draggingVertex && (
                       <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
