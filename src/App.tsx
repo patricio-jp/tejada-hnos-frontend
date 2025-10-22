@@ -26,6 +26,7 @@ function Protected() {
     <div className="p-4">
       <h1 className="text-2xl font-bold">Protected</h1>
       <p className="mt-2">You can see this because you're authenticated.</p>
+      <MapExample />
     </div>
   )
 }
@@ -43,11 +44,12 @@ const PaginaCargando = () => (
   <div className="container mx-auto py-10">Cargando...</div>
 );
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
-const ParcelaPage = React.lazy(() => import('./modules/Fields/pages/PlotsPage'));
+const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Layout } from './components/layout/layout'
+import MapExample from './common/components/MapExample'
 
 
 export default function App() {

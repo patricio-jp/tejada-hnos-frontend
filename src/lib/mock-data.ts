@@ -48,6 +48,7 @@ export const MOCK_FIELDS: Field[] = [
       },
       properties: {
         name: "Campo \"La Esperanza\"",
+        color: "#2563eb",
       },
     },
     // Parcelas dentro del campo
@@ -81,3 +82,7 @@ export const MOCK_FIELDS: Field[] = [
     ],
   },
 ];
+
+export function overwriteMockFields(nextFields: Field[]): void {
+  MOCK_FIELDS.splice(0, MOCK_FIELDS.length, ...nextFields);
+}
