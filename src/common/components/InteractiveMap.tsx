@@ -43,6 +43,8 @@ interface InteractiveMapProps {
   // Nuevos parámetros
   availableModes?: Mode[]; // Modos disponibles (por defecto todos)
   defaultMode?: Mode; // Modo inicial (por defecto 'view')
+  mode?: Mode; // Modo controlado externamente (opcional)
+  onModeChange?: (mode: Mode) => void; // Callback cuando cambia el modo
   getPolygonColor?: (feature: Feature, isSelected: boolean) => [number, number, number, number]; // Color personalizado por feature
 }
 
@@ -62,6 +64,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   initialViewState: initialViewStateProp,
   availableModes = ['view', 'drawPolygon', 'select', 'edit'], // Por defecto todos los modos
   defaultMode = 'view', // Por defecto modo vista
+  mode: externalMode, // Modo controlado externamente
+  onModeChange, // Callback cuando cambia el modo
   getPolygonColor, // Función opcional para color personalizado
 }) => {
   // --- Estados de React ---
@@ -84,8 +88,17 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   );
 
-  // ESTADO CLAVE: El modo de edición (controlado por nuestros botones)
-  const [mode, setMode] = useState<Mode>(defaultMode);
+  // ESTADO CLAVE: El modo de edición (controlado por nuestros botones o por prop externa)
+  const [internalMode, setInternalMode] = useState<Mode>(externalMode || defaultMode);
+  
+  // Si se pasa mode externamente, usarlo; si no, usar el estado interno
+  const mode = externalMode !== undefined ? externalMode : internalMode;
+  
+  // Wrapper para cambiar el modo que también llama onModeChange si está definido
+  const changeMode = useCallback((newMode: Mode) => {
+    setInternalMode(newMode);
+    onModeChange?.(newMode);
+  }, [onModeChange]);
 
   // Estado para los índices de las figuras seleccionadas
   const [selectedFeatureIndexes, setSelectedFeatureIndexes] = useState<number[]>([]);
@@ -104,6 +117,20 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   
   // Ref para trackear si el mouse está presionado
   const isMouseDownRef = useRef(false);
+  
+  // Ref para trackear la última versión de initialData procesada
+  const lastInitialDataRef = useRef<FeatureCollection | undefined>(initialData);
+
+  // Sincronizar datos externos con el estado interno
+  useEffect(() => {
+    if (initialData && initialData !== lastInitialDataRef.current) {
+      // Solo actualizar si cambió la referencia
+      setData(initialData);
+      lastInitialDataRef.current = initialData;
+      // Limpiar la selección cuando cambian los datos externamente
+      setSelectedFeatureIndexes([]);
+    }
+  }, [initialData]);
 
   // Helper para verificar si un modo está disponible
   const isModeAvailable = useCallback((modeToCheck: Mode) => {
@@ -174,14 +201,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     onDataChange?.(newData);
 
     setDrawingPoints([]);
-    setMode('select');
-  }, [drawingPoints, data.features, onDataChange]);
+    changeMode('select');
+  }, [drawingPoints, data.features, onDataChange, changeMode]);
 
   // Función para cancelar el dibujo
   const cancelDrawing = useCallback(() => {
     setDrawingPoints([]);
-    setMode('view');
-  }, []);
+    changeMode('view');
+  }, [changeMode]);
 
   // Función para eliminar las figuras seleccionadas
   const handleDelete = () => {
@@ -200,7 +227,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     onDataChange?.(newData);
     
     setSelectedFeatureIndexes([]);
-    setMode('view');
+    changeMode('view');
   };
 
   // Handler para hover sobre el mapa (para actualizar drag)
@@ -491,7 +518,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        onClick={() => setMode('drawPolygon')}
+                        onClick={() => changeMode('drawPolygon')}
                       >
                         <PenTool className="mr-2 h-4 w-4" /> Crear Polígono
                       </Button>
@@ -506,7 +533,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       <Button
                         variant={mode === 'select' ? 'default' : 'outline'}
                         onClick={() => {
-                          setMode('select');
+                          changeMode('select');
                           if (mode === 'edit') {
                             // Al salir del modo edición, mantener la selección
                           }
@@ -527,7 +554,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     <TooltipTrigger asChild>
                       <Button
                         variant={mode === 'edit' ? 'default' : 'outline'}
-                        onClick={() => setMode('edit')}
+                        onClick={() => changeMode('edit')}
                         disabled={selectedFeatureIndexes.length === 0}
                       >
                         <Edit className="mr-2 h-4 w-4" /> Editar Vértices
@@ -560,7 +587,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                       <Button
                         variant={mode === 'view' ? 'default' : 'outline'}
                         onClick={() => {
-                          setMode('view');
+                          changeMode('view');
                           setSelectedFeatureIndexes([]);
                         }}
                       >

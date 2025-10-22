@@ -1,6 +1,6 @@
 // src/modules/Fields/components/FieldsEditor.tsx
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import type { Field } from "@/lib/map-types";
 import type { FeatureCollection, Feature } from "geojson";
@@ -19,11 +19,15 @@ interface FieldsEditorProps {
 export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
   const [selectedField, setSelectedField] = useState<Field | null>(null);
   const [editingField, setEditingField] = useState<Field | null>(null);
+  const [mapMode, setMapMode] = useState<'view' | 'select' | 'edit'>('select');
   const navigate = useNavigate();
 
-  // Convertir fields a FeatureCollection para el mapa
-  const mapData = fieldsToFeatureCollection(fields);
-  const initialViewState = fields.length > 0 ? calculateCenter(mapData) : undefined;
+  // Convertir fields a FeatureCollection para el mapa (memoizado para evitar recreaciones innecesarias)
+  const mapData = useMemo(() => fieldsToFeatureCollection(fields), [fields]);
+  const initialViewState = useMemo(() => 
+    fields.length > 0 ? calculateCenter(mapData) : undefined,
+    [fields.length, mapData]
+  );
 
   // Handler para cuando cambia la data del mapa
   const handleMapDataChange = useCallback((featureCollection: FeatureCollection) => {
@@ -50,7 +54,15 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
     onFieldsChange((current) => current.filter((f) => f.id !== field.id));
     setSelectedField(null);
     setEditingField(null);
+    setMapMode('select'); // Volver al modo selección después de eliminar
   }, [onFieldsChange]);
+
+  // Handler para iniciar edición de geometría
+  const handleEditGeometry = useCallback((_field: Field) => {
+    setSelectedField(null); // Cerrar el sheet
+    setMapMode('edit'); // Activar modo de edición en el mapa
+    // El campo permanece seleccionado en el mapa para que se pueda editar
+  }, []);
 
   // Handler para guardar detalles del campo editado
   const handleSaveFieldDetails = useCallback(() => {
@@ -90,6 +102,14 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
     return [0, 100, 255, 100];
   }, []);
 
+  // Handler para cuando cambia el modo del mapa
+  const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {
+    // Solo aceptar modos que usamos
+    if (newMode === 'view' || newMode === 'select' || newMode === 'edit') {
+      setMapMode(newMode);
+    }
+  }, []);
+
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
@@ -103,8 +123,9 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
         onDataChange={handleMapDataChange}
         onFeatureSelect={handleFeatureSelect}
         getPolygonColor={getFieldColor}
-        availableModes={['view', 'select']}
-        defaultMode="select"
+        availableModes={['view', 'select', 'edit']}
+        mode={mapMode}
+        onModeChange={handleModeChange}
         editable={true}
         initialViewState={initialViewState}
       />
@@ -118,10 +139,7 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
           setSelectedField(null);
         }}
         onDelete={handleDeleteField}
-        onEditGeometry={() => {
-          // La edición de geometría ahora se maneja directamente en el mapa
-          setSelectedField(null);
-        }}
+        onEditGeometry={handleEditGeometry}
         onManagePlots={(field) => navigate(`/fields/${field.id}`)}
       />
 
@@ -131,8 +149,8 @@ export function FieldsEditor({ fields, onFieldsChange }: FieldsEditorProps) {
         onClose={() => setEditingField(null)}
         onSave={handleSaveFieldDetails}
         onEditGeometry={() => {
-          // La edición de geometría ahora se maneja directamente en el mapa
           setEditingField(null);
+          setMapMode('edit'); // Activar modo de edición en el mapa
         }}
       />
     </div>

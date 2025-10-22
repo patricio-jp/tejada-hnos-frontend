@@ -1,6 +1,6 @@
 // src/components/PlotsEditor.tsx
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Field, Plot } from "@/lib/map-types";
 import type { FeatureCollection, Feature, Polygon } from "geojson";
 import { computePolygonCentroid } from "@/common/utils/geometry";
@@ -19,21 +19,24 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   const [plots, setPlots] = useState<Plot[]>(field.plots || []);
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
+  const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
 
-  // Convertir plots a FeatureCollection para el mapa
-  const mapData = plotsToFeatureCollection(plots);
+  // Convertir plots a FeatureCollection para el mapa (memoizado)
+  const mapData = useMemo(() => plotsToFeatureCollection(plots), [plots]);
   
-  // Calcular el centro del campo para el mapa
-  // computePolygonCentroid retorna [lat, lng] pero necesitamos [lng, lat]
-  const fieldCenter = computePolygonCentroid(field.boundary.geometry.coordinates);
-  const initialViewState = {
-    longitude: fieldCenter[1], // lng es el segundo elemento
-    latitude: fieldCenter[0],  // lat es el primer elemento
-    zoom: 14,
-  };
+  // Calcular el centro del campo para el mapa (memoizado)
+  const initialViewState = useMemo(() => {
+    // computePolygonCentroid retorna [lat, lng] pero necesitamos [lng, lat]
+    const fieldCenter = computePolygonCentroid(field.boundary.geometry.coordinates);
+    return {
+      longitude: fieldCenter[1], // lng es el segundo elemento
+      latitude: fieldCenter[0],  // lat es el primer elemento
+      zoom: 14,
+    };
+  }, [field.boundary.geometry.coordinates]);
 
-  // Crear un feature del campo para mostrarlo en el mapa (solo visualización)
-  const fieldBoundaryFeature: Feature<Polygon> = {
+  // Crear un feature del campo para mostrarlo en el mapa (solo visualización) - memoizado
+  const fieldBoundaryFeature: Feature<Polygon> = useMemo(() => ({
     type: 'Feature',
     id: `field-boundary-${field.id}`,
     geometry: field.boundary.geometry,
@@ -41,13 +44,13 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       ...field.boundary.properties,
       isFieldBoundary: true, // Marcador especial
     }
-  };
+  }), [field.id, field.boundary.geometry, field.boundary.properties]);
 
-  // Combinar el boundary del campo con los plots
-  const combinedData: FeatureCollection = {
+  // Combinar el boundary del campo con los plots (memoizado)
+  const combinedData: FeatureCollection = useMemo(() => ({
     type: 'FeatureCollection',
     features: [fieldBoundaryFeature, ...mapData.features]
-  };
+  }), [fieldBoundaryFeature, mapData.features]);
 
   // Handler para cuando cambia la data del mapa
   const handleMapDataChange = useCallback((featureCollection: FeatureCollection) => {
@@ -94,6 +97,14 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     setPlots((current) => current.filter((p) => p.id !== plot.id));
     setSelectedPlot(null);
     setEditingPlot(null);
+    setMapMode('select'); // Volver al modo selección después de eliminar
+  }, []);
+
+  // Handler para iniciar edición de geometría
+  const handleEditGeometry = useCallback((_plot: Plot) => {
+    setSelectedPlot(null); // Cerrar el sheet
+    setMapMode('edit'); // Activar modo de edición en el mapa
+    // La parcela permanece seleccionada en el mapa para que se pueda editar
   }, []);
 
   // Handler para guardar detalles de la parcela editada
@@ -131,6 +142,11 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     return [0, 100, 255, 100];
   }, []);
 
+  // Handler para cuando cambia el modo del mapa
+  const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {
+    setMapMode(newMode);
+  }, []);
+
   return (
     <>
       <InteractiveMap
@@ -139,7 +155,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         onFeatureSelect={handleFeatureSelect}
         getPolygonColor={getPlotColor}
         availableModes={['view', 'drawPolygon', 'select', 'edit']}
-        defaultMode="select"
+        mode={mapMode}
+        onModeChange={handleModeChange}
         editable={true}
         initialViewState={initialViewState}
       />
@@ -153,10 +170,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
           setSelectedPlot(null);
         }}
         onDelete={handleDeletePlot}
-        onEditGeometry={() => {
-          // La edición de geometría ahora se maneja directamente en el mapa
-          setSelectedPlot(null);
-        }}
+        onEditGeometry={handleEditGeometry}
       />
 
       <PlotEditDialog
@@ -165,8 +179,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         onClose={() => setEditingPlot(null)}
         onSave={handleSavePlotDetails}
         onEditGeometry={() => {
-          // La edición de geometría ahora se maneja directamente en el mapa
           setEditingPlot(null);
+          setMapMode('edit'); // Activar modo de edición en el mapa
         }}
       />
     </>
