@@ -1,17 +1,41 @@
 // src/modules/Activities/hooks/useActivities.ts
-import { useState, useMemo } from 'react';
-import type { Activity, ActivityFilters } from '../types/activity';
-import { getMockActivities } from '../data/mock-activities';
+import { useState, useMemo, useEffect } from 'react';
+import type { 
+  Activity, 
+  ActivityFilters, 
+  CreateActivityPayload, 
+  UpdateActivityPayload 
+} from '../types/activity';
+import { api } from '@/lib/api';
 
 export function useActivities() {
-  const [activities, setActivities] = useState<Activity[]>(getMockActivities());
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [filters, setFilters] = useState<ActivityFilters>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getActivityLogs();
+      setActivities(data);
+    } catch (err) {
+      setError('Error al cargar las actividades');
+      console.error('Error fetching activities:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
 
   const filteredActivities = useMemo(() => {
     let result = [...activities];
 
-    if (filters.type) {
-      result = result.filter(act => act.type === filters.type);
+    if (filters.activityType) {
+      result = result.filter(act => act.activityType === filters.activityType);
     }
 
     if (filters.status) {
@@ -35,7 +59,7 @@ export function useActivities() {
       result = result.filter(act =>
         act.description.toLowerCase().includes(term) ||
         act.plotName?.toLowerCase().includes(term) ||
-        act.createdBy.toLowerCase().includes(term)
+        act.createdByUserId.toLowerCase().includes(term)
       );
     }
 
@@ -45,27 +69,59 @@ export function useActivities() {
     return result;
   }, [activities, filters]);
 
-  const addActivity = (activity: Activity) => {
-    setActivities(prev => [...prev, activity]);
+  const addActivity = async (activityData: Omit<Activity, 'id' | 'createdAt' | 'createdBy'>) => {
+    try {
+      setLoading(true);
+      const newActivity = await api.createActivityLog(activityData);
+      setActivities(prev => [newActivity, ...prev]);
+      return newActivity;
+    } catch (err) {
+      setError('Error al crear la actividad');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateActivity = (id: string, updates: Partial<Activity>) => {
-    setActivities(prev =>
-      prev.map(act => (act.id === id ? { ...act, ...updates } : act))
-    );
+  const updateActivity = async (id: string, updates: Partial<Activity>) => {
+    try {
+      setLoading(true);
+      const updatedActivity = await api.updateActivityLog(id, updates);
+      setActivities(prev =>
+        prev.map(act => (act.id === id ? updatedActivity : act))
+      );
+      return updatedActivity;
+    } catch (err) {
+      setError('Error al actualizar la actividad');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteActivity = (id: string) => {
-    setActivities(prev => prev.filter(act => act.id !== id));
+  const deleteActivity = async (id: string) => {
+    try {
+      setLoading(true);
+      await api.deleteActivityLog(id);
+      setActivities(prev => prev.filter(act => act.id !== id));
+    } catch (err) {
+      setError('Error al eliminar la actividad');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return {
     activities: filteredActivities,
     allActivities: activities,
+    loading,
+    error,
     filters,
     setFilters,
     addActivity,
     updateActivity,
     deleteActivity,
+    refreshActivities: fetchActivities,
   };
 }

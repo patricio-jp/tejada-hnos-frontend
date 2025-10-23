@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 type ElectronAPI = {
-  invoke: <T = any>(channel: string, ...args: unknown[]) => Promise<T>
+  invoke: <T = any>(channel: string, ...args: unknown[]) => Promise<T>,
 }
 
 const api: ElectronAPI = {

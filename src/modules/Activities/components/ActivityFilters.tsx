@@ -12,7 +12,13 @@ interface ActivityFiltersProps {
   onFiltersChange: (filters: Filters) => void;
 }
 
-const ACTIVITY_TYPES: ActivityType[] = ['poda', 'riego', 'aplicacion', 'cosecha', 'otro'];
+const ACTIVITY_TYPES: ActivityType[] = [
+  'poda',
+  'riego',
+  'aplicacion',
+  'cosecha',
+  'otro',
+]; // Ensure these match the ActivityType definition
 const STATUSES = ['pendiente', 'en-progreso', 'completada', 'cancelada'] as const;
 
 export function ActivityFilters({ filters, onFiltersChange }: ActivityFiltersProps) {
@@ -55,11 +61,11 @@ export function ActivityFilters({ filters, onFiltersChange }: ActivityFiltersPro
           <select
             id="type"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={filters.type || ''}
+            value={filters.activityType || ''}
             onChange={(e) =>
               onFiltersChange({
                 ...filters,
-                type: e.target.value ? (e.target.value as ActivityType) : undefined,
+                activityType: e.target.value ? (e.target.value as ActivityType) : undefined,
               })
             }
           >

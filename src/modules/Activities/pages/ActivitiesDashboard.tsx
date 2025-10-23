@@ -9,8 +9,7 @@ import { ActivityCard } from '../components/ActivityCard';
 import { ActivityFormDialog } from '../components/ActivityFormDialog';
 import type { Activity } from '../types/activity';
 import { Plus } from 'lucide-react';
-import { Link } from 'react-router';
-
+import { ActivityFeed } from '../components/ActivityFeed';
 export default function ActivitiesDashboard() {
   const { activities, allActivities, addActivity, updateActivity } = useActivities();
   const stats = useActivityStats(allActivities);
@@ -25,9 +24,9 @@ export default function ActivitiesDashboard() {
     )
     .slice(0, 5);
 
-  const handleSaveActivity = (activity: Activity) => {
+  const handleSaveActivity = (activity: Omit<Activity, 'id' | 'createdAt' | 'createdBy'>) => {
     if (editingActivity) {
-      updateActivity(activity.id, activity);
+      updateActivity(editingActivity.id, activity);
     } else {
       addActivity(activity);
     }
@@ -90,8 +89,8 @@ export default function ActivitiesDashboard() {
               Actividades programadas para los próximos días
             </p>
           </div>
-          <Button variant="outline" asChild>
-            <Link to="/activities/list">Ver todas</Link>
+          <Button variant="outline" onClick={() => window.location.href = '/activities/list'}>
+            Ver todas
           </Button>
         </div>
 
@@ -114,6 +113,16 @@ export default function ActivitiesDashboard() {
           </div>
         )}
       </div>
+
+      {/* Actividades Recientes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actividades Recientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed />
+        </CardContent>
+      </Card>
 
       {/* Dialog para crear/editar */}
       <ActivityFormDialog

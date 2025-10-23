@@ -8,4 +8,5 @@ export { ActivityStatsCards } from './components/ActivityStatsCards';
 export { ActivitiesTable } from './components/ActivitiesTable';
 export { useActivities } from './hooks/useActivities';
 export { useActivityStats } from './hooks/useActivityStats';
+export { ActivityFeed } from './components/ActivityFeed';
 export type { Activity, ActivityType, ActivityFilters as ActivityFiltersType } from './types/activity';

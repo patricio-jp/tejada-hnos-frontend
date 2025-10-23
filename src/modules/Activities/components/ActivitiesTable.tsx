@@ -65,8 +65,8 @@ export function ActivitiesTable({ activities, onEdit }: ActivitiesTableProps) {
                     }`}
                   >
                     <td className="p-4 align-middle">
-                      <Badge className={getActivityTypeColor(activity.type)}>
-                        {getActivityTypeLabel(activity.type)}
+                      <Badge className={getActivityTypeColor(activity.activityType)}>
+                        {getActivityTypeLabel(activity.activityType)}
                       </Badge>
                     </td>
                     <td className="p-4 align-middle">
@@ -88,7 +88,7 @@ export function ActivitiesTable({ activities, onEdit }: ActivitiesTableProps) {
                       </div>
                     </td>
                     <td className="p-4 align-middle">
-                      <span className="text-sm">{activity.createdBy}</span>
+                      <span className="text-sm">{activity.createdByUserId}</span>
                     </td>
                     <td className="p-4 align-middle">
                       <Badge variant="outline" className={getStatusColor(activity.status)}>

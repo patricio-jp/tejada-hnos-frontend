@@ -15,9 +15,9 @@ export default function ActivitiesListPage() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const handleSaveActivity = (activity: Activity) => {
+  const handleSaveActivity = (activity: Omit<Activity, 'id' | 'createdAt' | 'createdBy'>) => {
     if (editingActivity) {
-      updateActivity(activity.id, activity);
+      updateActivity(editingActivity.id, activity);
     } else {
       addActivity(activity);
     }

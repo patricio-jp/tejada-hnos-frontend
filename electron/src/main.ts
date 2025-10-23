@@ -39,6 +39,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
+const API_BASE_URL = process.env.API_URL || 'http://localhost:3000';
+
 ipcMain.handle('ping', async () => 'pong')
 
 ipcMain.on('preload-ready', () => {
@@ -47,4 +49,42 @@ ipcMain.on('preload-ready', () => {
 
 ipcMain.handle('getAppVersion', async () => {
   return app.getVersion()
+})
+
+// Activity Log handlers
+ipcMain.handle('getActivityLogs', async () => {
+  const response = await fetch(`${API_BASE_URL}/api/activity-logs`);
+  if (!response.ok) throw new Error('Failed to fetch activities');
+  return response.json();
+})
+
+ipcMain.handle('createActivityLog', async (_, data) => {
+  const response = await fetch(`${API_BASE_URL}/api/activity-logs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to create activity');
+  return response.json();
+})
+
+ipcMain.handle('updateActivityLog', async (_, { id, ...data }) => {
+  const response = await fetch(`${API_BASE_URL}/api/activity-logs/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update activity');
+  return response.json();
+})
+
+ipcMain.handle('deleteActivityLog', async (_, id) => {
+  const response = await fetch(`${API_BASE_URL}/api/activity-logs/${id}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete activity');
 })

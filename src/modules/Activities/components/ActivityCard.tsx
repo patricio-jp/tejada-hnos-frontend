@@ -29,8 +29,8 @@ export function ActivityCard({ activity, onEdit, onView, compact = false }: Acti
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={getActivityTypeColor(activity.type)}>
-                {getActivityTypeLabel(activity.type)}
+              <Badge className={getActivityTypeColor(activity.activityType)}>
+                {getActivityTypeLabel(activity.activityType)}
               </Badge>
               <Badge variant="outline" className={getStatusColor(activity.status)}>
                 {getStatusLabel(activity.status)}
@@ -64,7 +64,7 @@ export function ActivityCard({ activity, onEdit, onView, compact = false }: Acti
           )}
           <div className="flex items-center gap-2">
             <User className="h-4 w-4" />
-            <span>Creada por: {activity.createdBy}</span>
+            <span>Creada por: {activity.createdByUserId}</span>
           </div>
           {!compact && (
             <div className="flex items-center gap-2">

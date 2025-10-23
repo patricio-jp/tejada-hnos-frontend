@@ -45,7 +45,7 @@ export function useActivityStats(activities: Activity[]): ActivityStats {
       }
 
       // Contar por tipo
-      stats.byType[activity.type] = (stats.byType[activity.type] || 0) + 1;
+      stats.byType[activity.activityType] = (stats.byType[activity.activityType] || 0) + 1;
 
       // Contar actividades próximas (esta semana)
       if (
