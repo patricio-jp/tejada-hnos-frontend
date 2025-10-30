@@ -1,13 +1,12 @@
 import React, { Suspense } from 'react'
-import { Routes, Route } from 'react-router'
-import LoginPage from '@/modules/Auth/pages/login'
+import { Navigate, Route, Routes } from 'react-router'
 
 
-function Home() {
+function Dashboard() {
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold">Home</h1>
-      <p className="mt-2">Welcome to the app. Use the navigation to try routes.</p>
+      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <p className="mt-2">Bienvenido al panel principal.</p>
     </div>
   )
 }
@@ -71,16 +70,14 @@ import MapExample from './common/components/MapExample'
 export default function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-      <Routes>
-        <Route path="login" element={<LoginPage />} />
-      </Routes>
       {/* Rutas protegidas por autenticación */}
       <ProtectedRoute>
         <Layout>
           {/* Suspense para carga diferida (lazy loading) */}
           <Suspense fallback={<PaginaCargando />}>
             <Routes>
-              <Route path="" element={<Home />} />
+              <Route path="" element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="about" element={<About />} />
               <Route path="protected" element={<Protected />}/>
               {/* Ruta para la lista de campos */}
