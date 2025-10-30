@@ -4,10 +4,14 @@ import type { MenuItem } from "@/common/types/menu-item";
 export const MENUS_MAIN: MenuItem[] = [
   {
       title: "Main Dashboard",
-      url: "/",
+      url: "/dashboard",
       icon: SquareTerminal,
       isActive: true,
       items: [
+        {
+          title: "Dashboard",
+          url: "/dashboard",
+        },
         {
           title: "About",
           url: "/about",
@@ -16,15 +20,11 @@ export const MENUS_MAIN: MenuItem[] = [
           title: "Protected",
           url: "/protected",
         },
-        {
-          title: "Login",
-          url: "/login",
-        },
       ],
     },
     {
       title: "Home",
-      url: "/",
+      url: "/dashboard",
       icon: Home,
     },
     {
