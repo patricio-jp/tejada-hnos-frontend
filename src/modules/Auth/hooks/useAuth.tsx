@@ -63,7 +63,7 @@ export function parseJwt(token: string | null) {
 }
 
 export function isTokenValid(token: string | null) {
-  return true // TO-DO: temporarily disable token validation
+  //return true // TO-DO: temporarily disable token validation
   if (!token) return false
   const payload = parseJwt(token)
   if (!payload) return false
@@ -77,7 +77,7 @@ export function isTokenValid(token: string | null) {
 export default function useAuth(options?: UseAuthOptions) {
   const accessKey = options?.accessTokenKey ?? 'access_token'
   const refreshKey = options?.refreshTokenKey ?? 'refresh_token'
-  const refreshUrl = options?.refreshUrl ?? '/api/auth/refresh'
+  const refreshUrl = options?.refreshUrl ?? 'http://localhost:3000/auth/refresh-token'
 
   const [tokens, setTokens] = useState<Tokens>(() =>
     readTokens(accessKey, refreshKey),
@@ -127,17 +127,17 @@ export default function useAuth(options?: UseAuthOptions) {
         const res = await fetch(refreshUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: currentRefresh }),
+          body: JSON.stringify({ refreshToken: currentRefresh }),
         })
         if (!res.ok) {
           // refresh failed
           logout()
           return false
         }
-        const data = await res.json()
-        // expect at least access_token in response
-        const newAccess = data.access_token ?? data.accessToken ?? data.accessTokenString
-        const newRefresh = data.refresh_token ?? data.refreshToken ?? null
+        const { data } = await res.json()
+        // expect at least accessToken in response
+        const newAccess = data.accessToken ?? data.access_token ?? data.accessTokenString
+        const newRefresh = data.refreshToken ?? data.refresh_token ?? null
         if (typeof newAccess === 'string') {
           try {
             localStorage.setItem(accessKey, newAccess)

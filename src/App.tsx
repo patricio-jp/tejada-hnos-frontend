@@ -1,13 +1,29 @@
 import React, { Suspense } from 'react'
 import { Routes, Route } from 'react-router'
 import LoginPage from '@/modules/Auth/pages/login'
+import useAuth from '@/modules/Auth/hooks/useAuth'
+import { Button } from '@/components/ui/button'
 
 
 function Home() {
+  const { accessPayload, logout } = useAuth()
+  
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold">Home</h1>
       <p className="mt-2">Welcome to the app. Use the navigation to try routes.</p>
+      
+      {accessPayload && (
+        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h2 className="text-lg font-semibold mb-2">Sesión Activa</h2>
+          <p className="text-sm">
+            <strong>Email:</strong> {accessPayload.email || 'N/A'}
+          </p>
+          <Button onClick={logout} variant="outline" size="sm" className="mt-3">
+            Cerrar Sesión
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -22,10 +38,21 @@ function About() {
 }
 
 function Protected() {
+  const { accessPayload, logout } = useAuth()
+  
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold">Protected</h1>
       <p className="mt-2">You can see this because you're authenticated.</p>
+      {accessPayload && (
+        <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <h2 className="text-lg font-semibold mb-2">User Information</h2>
+          <pre className="text-sm">{JSON.stringify(accessPayload, null, 2)}</pre>
+          <Button onClick={logout} className="mt-4">
+            Cerrar Sesión
+          </Button>
+        </div>
+      )}
       <MapExample />
     </div>
   )
