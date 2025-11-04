@@ -62,6 +62,11 @@ const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
 const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
 
+// Páginas de catálogos
+const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'));
+const CustomersPage = React.lazy(() => import('./modules/Customers/pages/CustomersPage'));
+const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/VarietiesPage'));
+
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Layout } from './components/layout/layout'
@@ -96,6 +101,11 @@ export default function App() {
                 <Route index element={<ActivitiesDashboard />} />
                 <Route path="list" element={<ActivitiesListPage />} />
               </Route>
+
+              {/* Rutas de Catálogos */}
+              <Route path="suppliers" element={<SuppliersPage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="varieties" element={<VarietiesPage />} />
 
               <Route path="reports" element={<PaginaNoImplementada />} />
               <Route path="users" element={<PaginaNoImplementada />} />
