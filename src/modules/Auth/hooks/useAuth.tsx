@@ -5,9 +5,18 @@ type Tokens = {
   refreshToken: string | null
 }
 
+export type User = {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+  [key: string]: unknown
+}
+
 export type UseAuthOptions = {
   accessTokenKey?: string
   refreshTokenKey?: string
+  userKey?: string
   // Optional function to call when logout is triggered (e.g. to notify server)
   onLogout?: () => void
   // URL to POST the refresh token to. Expect JSON response with at least { access_token: string }
@@ -21,6 +30,28 @@ function readTokens(accessKey: string, refreshKey: string): Tokens {
     return { accessToken: access, refreshToken: refresh }
   } catch {
     return { accessToken: null, refreshToken: null }
+  }
+}
+
+function readUser(userKey: string): User | null {
+  try {
+    const userStr = localStorage.getItem(userKey)
+    if (!userStr) return null
+    return JSON.parse(userStr) as User
+  } catch {
+    return null
+  }
+}
+
+function saveUser(userKey: string, user: User | null) {
+  try {
+    if (user) {
+      localStorage.setItem(userKey, JSON.stringify(user))
+    } else {
+      localStorage.removeItem(userKey)
+    }
+  } catch {
+    // ignore storage errors
   }
 }
 
@@ -77,11 +108,14 @@ export function isTokenValid(token: string | null) {
 export default function useAuth(options?: UseAuthOptions) {
   const accessKey = options?.accessTokenKey ?? 'access_token'
   const refreshKey = options?.refreshTokenKey ?? 'refresh_token'
+  const userKey = options?.userKey ?? 'user'
   const refreshUrl = options?.refreshUrl ?? 'http://localhost:3000/auth/refresh-token'
 
   const [tokens, setTokens] = useState<Tokens>(() =>
     readTokens(accessKey, refreshKey),
   )
+
+  const [user, setUser] = useState<User | null>(() => readUser(userKey))
 
   const accessPayload = useMemo(() => parseJwt(tokens.accessToken), [tokens.accessToken])
 
@@ -93,25 +127,30 @@ export default function useAuth(options?: UseAuthOptions) {
     return isTokenValid(current.accessToken)
   }, [accessKey, refreshKey])
 
-  const login = useCallback((accessToken: string, refreshToken?: string) => {
+  const login = useCallback((accessToken: string, refreshToken?: string, userData?: User) => {
     try {
       localStorage.setItem(accessKey, accessToken)
       if (refreshToken) localStorage.setItem(refreshKey, refreshToken)
+      if (userData) saveUser(userKey, userData)
     } catch {
       // ignore storage errors
     }
     setTokens({ accessToken, refreshToken: refreshToken ?? null })
-  }, [accessKey, refreshKey])
+    if (userData) setUser(userData)
+  }, [accessKey, refreshKey, userKey])
+  
   const logout = useCallback(() => {
     try {
       localStorage.removeItem(accessKey)
       localStorage.removeItem(refreshKey)
+      localStorage.removeItem(userKey)
     } catch {
       // ignore
     }
     setTokens({ accessToken: null, refreshToken: null })
+    setUser(null)
     if (options?.onLogout) options.onLogout()
-  }, [accessKey, refreshKey, options])
+  }, [accessKey, refreshKey, userKey, options])
 
   // Avoid concurrent refresh requests using a ref
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null)
@@ -134,7 +173,7 @@ export default function useAuth(options?: UseAuthOptions) {
           logout()
           return false
         }
-        const { data } = await res.json()
+        const data = await res.json()
         // expect at least accessToken in response
         const newAccess = data.accessToken ?? data.access_token ?? data.accessTokenString
         const newRefresh = data.refreshToken ?? data.refresh_token ?? null
@@ -165,14 +204,16 @@ export default function useAuth(options?: UseAuthOptions) {
   useEffect(() => {
     // Listen to storage events to sync auth across tabs/windows
     function onStorage(e: StorageEvent) {
-      if (e.key === accessKey || e.key === refreshKey || e.key === null) {
+      if (e.key === accessKey || e.key === refreshKey || e.key === userKey || e.key === null) {
         const current = readTokens(accessKey, refreshKey)
         setTokens(current)
+        const currentUser = readUser(userKey)
+        setUser(currentUser)
       }
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [accessKey, refreshKey])
+  }, [accessKey, refreshKey, userKey])
 
   useEffect(() => {
     // Re-check token periodically in background in case it expires while the app is open
@@ -206,6 +247,7 @@ export default function useAuth(options?: UseAuthOptions) {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     accessPayload,
+    user,
     login,
     logout,
     checkAuth,

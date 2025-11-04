@@ -59,8 +59,8 @@ export function LoginForm({
 
       const { data } = await response.json()
       
-      // Guardar tokens usando el hook useAuth
-      login(data.accessToken, data.refreshToken)
+      // Guardar tokens y datos del usuario usando el hook useAuth
+      login(data.accessToken, data.refreshToken, data.user)
       
       // Redirigir al dashboard o página principal
       navigate("/")
