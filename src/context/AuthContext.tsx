@@ -36,6 +36,7 @@ const ACCESS_TOKEN_KEY = 'access_token'
 const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'auth_user'
 
+
 function readStoredValue(key: string) {
   if (typeof window === 'undefined') return null
   try {
@@ -169,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/login', { // ¡La ruta del Desvío!
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -191,23 +192,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error('Respuesta inesperada del servidor.')
         }
 
-        const access = payload.accessToken ?? payload.access_token
+        // --- ¡¡¡INICIO DEL ARREGLO FINAL!!! ---
+        // El backend nos devuelve { message: '...', data: { ... } }
+        // ¡El token está adentro de "data"!
+        if (!isPlainObject(payload.data)) {
+          throw new Error('La respuesta del servidor no tiene el formato esperado (falta "data").');
+        }
+
+        const data = payload.data as Record<string, unknown>; // ¡Usamos "data"!
+        // --- FIN DEL ARREGLO ---
+
+        const access = data.accessToken ?? data.access_token // ¡Buscamos en "data"!
         if (typeof access !== 'string' || access.length === 0) {
           throw new Error('La respuesta del servidor no incluye un token válido.')
         }
 
         const refreshValue =
-          typeof payload.refreshToken === 'string'
-            ? payload.refreshToken
-            : typeof payload.refresh_token === 'string'
-              ? payload.refresh_token
+          typeof data.refreshToken === 'string'
+            ? data.refreshToken
+            : typeof data.refresh_token === 'string'
+              ? data.refresh_token
               : null
 
         const normalizedRefresh = refreshValue && refreshValue.length > 0 ? refreshValue : null
 
         const userValue =
-          isPlainObject(payload.user) || isPlainObject((payload as Record<string, unknown>).profile)
-            ? ((payload.user ?? (payload as Record<string, unknown>).profile) as AuthUser)
+          isPlainObject(data.user) || isPlainObject((data as Record<string, unknown>).profile)
+            ? ((data.user ?? (data as Record<string, unknown>).profile) as AuthUser)
             : null
 
         persistSession(access, normalizedRefresh, userValue)
