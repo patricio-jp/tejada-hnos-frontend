@@ -31,6 +31,7 @@ import {
   Clock
 } from "lucide-react";
 import { PurchaseOrderStatus } from "../types";
+import { formatCurrency } from "@/lib/currency";
 
 interface PurchaseOrderDetailsSheetProps {
   purchaseOrder: PurchaseOrder | null;
@@ -67,21 +68,6 @@ export function PurchaseOrderDetailsSheet({
 
   // Safely coerce potentially string numeric values coming from the API
   const totalAmountNumber = Number(purchaseOrder.totalAmount ?? 0);
-
-  // Format numbers as Argentine pesos: $ with '.' as thousand separator and ',' as decimal
-  const formatCurrency = (value: number) => {
-    try {
-      return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
-    } catch {
-      // Fallback to a simple formatter
-      return `$ ${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".").replace('.', ',')}`;
-    }
-  };
 
   return (
     <Sheet open={open} onOpenChange={onClose}>

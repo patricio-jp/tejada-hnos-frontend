@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { ArrowLeft, Plus, Trash2, Save, Package, DollarSign, ShoppingCart, AlertCircle } from "lucide-react";
 import type { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from "../types";
+import { formatCurrency } from "@/lib/currency";
 
 interface OrderItem {
   inputId: string; // UUID v4
@@ -85,7 +86,7 @@ export default function PurchaseOrderFormPage() {
             setSupplierId(order.supplierId);
             setItems(
               order.details.map((detail) => ({
-                inputId: detail.inputId,
+                inputId: detail.input?.id || detail.inputId,
                 quantity: detail.quantity,
                 unitPrice: detail.unitPrice,
               }))
@@ -381,9 +382,8 @@ export default function PurchaseOrderFormPage() {
                         <div className="space-y-2">
                           <Label>Subtotal</Label>
                           <div className="h-10 px-3 py-2 bg-muted rounded-md flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">S/</span>
                             <span className="font-semibold">
-                              {itemSubtotal.toFixed(2)}
+                              {formatCurrency(itemSubtotal)}
                             </span>
                           </div>
                         </div>
@@ -404,7 +404,7 @@ export default function PurchaseOrderFormPage() {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-primary">
-                  S/ {totalAmount.toFixed(2)}
+                  {formatCurrency(totalAmount)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {items.filter(i => i.inputId && i.quantity > 0).length} item(s)
