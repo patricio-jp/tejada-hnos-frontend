@@ -69,6 +69,23 @@ export function PurchaseOrderDetailsSheet({
   // Safely coerce potentially string numeric values coming from the API
   const totalAmountNumber = Number(purchaseOrder.totalAmount ?? 0);
 
+  // Calcular totales de recepción
+  const totalQuantityOrdered = purchaseOrder.details.reduce(
+    (sum, detail) => sum + Number(detail.quantity), 
+    0
+  );
+  const totalQuantityReceived = purchaseOrder.details.reduce(
+    (sum, detail) => sum + Number(detail.quantityReceived || 0), 
+    0
+  );
+  const totalAmountReceived = purchaseOrder.details.reduce(
+    (sum, detail) => sum + (Number(detail.quantityReceived || 0) * Number(detail.unitPrice)), 
+    0
+  );
+  const receptionPercentage = totalQuantityOrdered > 0 
+    ? Math.round((totalQuantityReceived / totalQuantityOrdered) * 100)
+    : 0;
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
@@ -145,6 +162,53 @@ export function PurchaseOrderDetailsSheet({
               </span>
             </div>
           </div>
+
+          {/* Estadísticas de Recepción */}
+          {(purchaseOrder.status === PurchaseOrderStatus.RECIBIDA || 
+            purchaseOrder.status === PurchaseOrderStatus.RECIBIDA_PARCIAL ||
+            totalQuantityReceived > 0) && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg bg-green-100/50 dark:bg-green-950/30 dark:border-green-900/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <PackageCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span className="text-xs text-muted-foreground">Total Recibido</span>
+                </div>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {formatCurrency(totalAmountReceived)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  de {formatCurrency(totalAmountNumber)}
+                </p>
+              </div>
+              <div className="p-4 border rounded-lg bg-blue-100/50 dark:bg-blue-950/30 dark:border-blue-900/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs text-muted-foreground">Porcentaje Recibido</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    {receptionPercentage}%
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    ({totalQuantityReceived} de {totalQuantityOrdered})
+                  </span>
+                </div>
+                {receptionPercentage === 100 ? (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                    ✓ Completamente recibido
+                  </p>
+                ) : receptionPercentage > 0 ? (
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium">
+                    Recepción parcial
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sin recepciones
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           <Separator />
 

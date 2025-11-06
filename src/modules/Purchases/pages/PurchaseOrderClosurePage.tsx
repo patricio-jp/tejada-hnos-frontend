@@ -163,7 +163,13 @@ export default function PurchaseOrderClosurePage() {
                 <p className="text-sm text-muted-foreground">Total Recibido</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(
-                    ordersToBeClosed.reduce((sum, order) => sum + Number(order.totalAmount), 0)
+                    ordersToBeClosed.reduce((sum, order) => {
+                      // Calcular el monto efectivamente recibido (cantidad recibida * precio unitario)
+                      const receivedAmount = order.details.reduce((detailSum, detail) => {
+                        return detailSum + (Number(detail.quantityReceived || 0) * Number(detail.unitPrice));
+                      }, 0);
+                      return sum + receivedAmount;
+                    }, 0)
                   )}
                 </p>
               </div>
