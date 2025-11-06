@@ -70,6 +70,10 @@ export const MENUS_MAIN: MenuItem[] = [
           title: "New Order",
           url: "/purchases/new",
         },
+        {
+          title: "Approvals (Admin)",
+          url: "/purchases/approvals",
+        },
       ],
     },
     {

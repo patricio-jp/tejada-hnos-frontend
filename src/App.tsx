@@ -63,9 +63,11 @@ const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/
 const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
+const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AdminRoute } from '@/components/AdminRoute'
 import { Layout } from './components/layout/layout'
 import MapExample from './common/components/MapExample'
 
@@ -104,6 +106,15 @@ export default function App() {
                 <Route index element={<PurchaseOrdersListPage />} />
                 <Route path="new" element={<PurchaseOrderFormPage />} />
                 <Route path="edit/:id" element={<PurchaseOrderFormPage />} />
+                {/* Ruta de aprobación solo para ADMIN */}
+                <Route 
+                  path="approvals" 
+                  element={
+                    <AdminRoute>
+                      <PurchaseOrderApprovalPage />
+                    </AdminRoute>
+                  } 
+                />
               </Route>
 
               <Route path="reports" element={<PaginaNoImplementada />} />
