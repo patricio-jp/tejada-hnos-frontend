@@ -74,6 +74,10 @@ export const MENUS_MAIN: MenuItem[] = [
           title: "Approvals (Admin)",
           url: "/purchases/approvals",
         },
+        {
+          title: "Closure (Admin)",
+          url: "/purchases/closure",
+        },
       ],
     },
     {

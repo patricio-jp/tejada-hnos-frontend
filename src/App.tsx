@@ -64,6 +64,7 @@ const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/A
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
+const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -112,6 +113,15 @@ export default function App() {
                   element={
                     <AdminRoute>
                       <PurchaseOrderApprovalPage />
+                    </AdminRoute>
+                  } 
+                />
+                {/* Ruta de cierre solo para ADMIN */}
+                <Route 
+                  path="closure" 
+                  element={
+                    <AdminRoute>
+                      <PurchaseOrderClosurePage />
                     </AdminRoute>
                   } 
                 />
