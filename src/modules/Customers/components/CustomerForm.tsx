@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types/customer';
 
 interface CustomerFormProps {
@@ -11,6 +12,17 @@ interface CustomerFormProps {
   onCancel: () => void;
 }
 
+/**
+ * Formulario para crear/editar clientes.
+ * 
+ * Características:
+ * - Validación de campos requeridos
+ * - Estado de loading con spinner visual
+ * - Notificaciones toast para feedback visual
+ * - Discriminación de errores por tipo (CUIT duplicado, validación, timeout, red, auth)
+ * - Mensajes de error específicos y llamativos
+ * - Prevención de doble submit
+ */
 export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps) {
   const [formData, setFormData] = useState({
     name: customer?.name || '',
@@ -21,34 +33,108 @@ export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   /**
    * Manejar el envío del formulario.
-   * Discrimina entre errores de validación y errores de red para mostrar mensajes apropiados.
+   * Muestra toasts específicos según el tipo de error o éxito.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       await onSubmit(formData);
+      
+      // ✅ Toast de éxito
+      toast.success(
+        customer ? '✓ Cliente actualizado' : '✓ Cliente creado',
+        {
+          description: customer 
+            ? `Se actualizó "${formData.name}" correctamente` 
+            : `Se creó "${formData.name}" exitosamente`,
+          duration: 3000,
+        }
+      );
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       
-      // Discriminar tipos de error para mostrar mensajes más útiles
-      if (errorMessage.includes('validación')) {
-        setError(`Error de validación: ${errorMessage}`);
-      } else if (errorMessage.includes('Timeout')) {
-        setError('El servidor está tardando demasiado en responder. Por favor, intenta nuevamente.');
-      } else if (errorMessage.includes('autenticación')) {
-        setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
-      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('network')) {
-        setError('Error de conexión. Verifica tu conexión a internet y vuelve a intentar.');
-      } else {
-        setError(errorMessage);
+      // 🔴 Error: CUIT/CUIL duplicado (crear o actualizar)
+      if (errorMessage.includes('cliente con ese CUIT') || errorMessage.includes('otro cliente con ese CUIT')) {
+        toast.error('❌ CUIT/CUIL duplicado', {
+          description: `El CUIT/CUIL "${formData.taxId}" ya está registrado en el sistema`,
+          duration: 5000,
+          style: {
+            background: '#DC2626',
+            color: 'white',
+            border: '2px solid #B91C1C',
+            fontWeight: '500',
+          },
+        });
+        return;
       }
+      
+      // 🔴 Error: Nombre duplicado (crear o actualizar)
+      if (errorMessage.includes('cliente con ese nombre') || errorMessage.includes('otro cliente con ese nombre')) {
+        toast.error('❌ Nombre duplicado', {
+          description: `El nombre "${formData.name}" ya está registrado en el sistema`,
+          duration: 5000,
+          style: {
+            background: '#DC2626',
+            color: 'white',
+            border: '2px solid #B91C1C',
+            fontWeight: '500',
+          },
+        });
+        return;
+      }
+      
+      // 🔴 Error: Validación general
+      if (errorMessage.includes('validación')) {
+        toast.error('❌ Error de validación', {
+          description: errorMessage.replace('Error de validación: ', ''),
+          duration: 5000,
+          style: {
+            background: '#DC2626',
+            color: 'white',
+          },
+        });
+        return;
+      }
+      
+      // ⏱️ Error: Timeout
+      if (errorMessage.includes('Timeout')) {
+        toast.error('⏱️ Tiempo de espera agotado', {
+          description: 'El servidor tardó demasiado en responder. Por favor, intenta nuevamente.',
+          duration: 5000,
+        });
+        return;
+      }
+      
+      // 🔒 Error: Sesión expirada
+      if (errorMessage.includes('autenticación')) {
+        toast.error('🔒 Sesión expirada', {
+          description: 'Por favor, inicia sesión nuevamente',
+          duration: 5000,
+        });
+        return;
+      }
+      
+      // 📡 Error: Conexión
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('network')) {
+        toast.error('📡 Error de conexión', {
+          description: 'Verifica tu conexión a internet y vuelve a intentar',
+          duration: 5000,
+        });
+        return;
+      }
+      
+      // 🔴 Error genérico
+      toast.error('❌ Error al guardar', {
+        description: errorMessage,
+        duration: 5000,
+      });
+      
     } finally {
       setLoading(false);
     }
@@ -107,10 +193,6 @@ export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps
           placeholder="Ej: +54 11 1234-5678"
         />
       </div>
-
-      {error && (
-        <div className="text-sm text-destructive">{error}</div>
-      )}
 
       <div className="flex gap-2 justify-end">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>

@@ -25,7 +25,6 @@ export default function CustomersPage() {
   const {
     customers,
     loading,
-    error,
     filters,
     createCustomer,
     updateCustomer,
@@ -188,14 +187,6 @@ export default function CustomersPage() {
     return (
       <div className="container mx-auto py-10">
         <p>Cargando clientes...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto py-10">
-        <p className="text-destructive">Error: {error}</p>
       </div>
     );
   }

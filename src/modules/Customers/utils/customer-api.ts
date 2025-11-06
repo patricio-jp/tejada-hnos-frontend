@@ -39,7 +39,7 @@ import type {
 } from '../types/customer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3ZGIxNjdiNy03NDQ3LTQ0YTUtYjM0Yi1lNGIzNmQ0ZTRjMjMiLCJlbWFpbCI6ImFkbWluQHRlamFkYWhub3MuY29tIiwicm9sZSI6IkFETUlOIiwibmFtZSI6IkFkbWluIiwibGFzdE5hbWUiOiJQcmluY2lwYWwiLCJpYXQiOjE3NjI0NTA0NDgsImV4cCI6MTc2MjQ1NDA0OH0.x13ugCNYg8Gb906aCU0sDea5w5C829pZsKuM7Up3Jgc';
+const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3ZGIxNjdiNy03NDQ3LTQ0YTUtYjM0Yi1lNGIzNmQ0ZTRjMjMiLCJlbWFpbCI6ImFkbWluQHRlamFkYWhub3MuY29tIiwicm9sZSI6IkFETUlOIiwibmFtZSI6IkFkbWluIiwibGFzdE5hbWUiOiJQcmluY2lwYWwiLCJpYXQiOjE3NjI0NjcyMjksImV4cCI6MTc2MjQ3MDgyOX0.MUjRRj7CEVaoYKnn_l3nYr8T3EF4UsgChXWOX4LDRwg';
 
 /**
  * Configuración para timeout de requests
@@ -97,7 +97,8 @@ async function fetchWithRetry<T>(
       // Si la respuesta no es OK, lanzar error específico según el código
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.message || response.statusText;
+        // El backend devuelve { errors: [{ message, name }] }
+        const errorMessage = errorData?.errors?.[0]?.message || errorData?.message || response.statusText;
 
         // Error 400: Validación - NO reintentar
         if (response.status === 400) {
@@ -112,6 +113,11 @@ async function fetchWithRetry<T>(
         // Error 401/403: Autenticación/Autorización - NO reintentar
         if (response.status === 401 || response.status === 403) {
           throw new Error(`Error de autenticación: ${errorMessage}`);
+        }
+
+        // Error 409: Conflicto (CUIT/Nombre duplicado) - NO reintentar
+        if (response.status === 409) {
+          throw new Error(errorMessage); // Usar el mensaje del backend directamente
         }
 
         // Otros errores del servidor
@@ -359,50 +365,17 @@ export const customerApi = {
   },
 
   /**
-   * Recalcular el total gastado para un cliente específico
-   * Usa el método getAll del API que ya maneja los filtros correctamente
-   * Con retry logic para manejar desconexiones temporales
+   * Recalcular el total gastado de un cliente.
+   * Utiliza getById que ahora calcula automáticamente el totalSpent
+   * basándose en las salesOrders y sus details.
+   * 
+   * @param id - UUID del cliente
+   * @returns Cliente con totalSpent actualizado
+   * @throws Error específico según tipo (no encontrado 404, red, timeout)
    */
-  async recalculateTotalSpent(id: string, retries = 2): Promise<Customer> {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        if (attempt > 0) {
-          // Esperar un poco antes de reintentar (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-        
-        // Simplemente llamamos a getAll sin filtros
-        // Esto reutiliza toda la lógica de autenticación y manejo de errores
-        const allCustomers = await this.getAll();
-        
-        // Buscar el cliente específico en la lista
-        const customer = allCustomers.find(c => c.id === id);
-        
-        if (!customer) {
-          throw new Error('Cliente no encontrado');
-        }
-        
-        return customer;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Error desconocido');
-        
-        // Si es el último intento, lanzar el error
-        if (attempt === retries) {
-          throw lastError;
-        }
-        
-        // Si el error no es de red, no reintentar
-        if (!lastError.message.includes('fetch') && 
-            !lastError.message.includes('network') && 
-            !lastError.message.includes('DISCONNECTED')) {
-          throw lastError;
-        }
-      }
-    }
-    
-    // Fallback (nunca debería llegar aquí)
-    throw lastError || new Error('Error al recalcular total gastado');
+  async recalculateTotalSpent(id: string): Promise<Customer> {
+    // El backend ahora calcula automáticamente totalSpent en getById
+    // que carga las salesOrders con sus details y suma el total
+    return this.getById(id);
   },
 };
