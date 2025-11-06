@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types/customer';
 
 interface CustomerFormProps {
@@ -22,6 +23,10 @@ export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Manejar el envío del formulario.
+   * Discrimina entre errores de validación y errores de red para mostrar mensajes apropiados.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -30,7 +35,20 @@ export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps
     try {
       await onSubmit(formData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      
+      // Discriminar tipos de error para mostrar mensajes más útiles
+      if (errorMessage.includes('validación')) {
+        setError(`Error de validación: ${errorMessage}`);
+      } else if (errorMessage.includes('Timeout')) {
+        setError('El servidor está tardando demasiado en responder. Por favor, intenta nuevamente.');
+      } else if (errorMessage.includes('autenticación')) {
+        setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('network')) {
+        setError('Error de conexión. Verifica tu conexión a internet y vuelve a intentar.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -99,7 +117,14 @@ export function CustomerForm({ customer, onSubmit, onCancel }: CustomerFormProps
           Cancelar
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? 'Guardando...' : customer ? 'Actualizar' : 'Crear'}
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            customer ? 'Actualizar' : 'Crear'
+          )}
         </Button>
       </div>
     </form>
