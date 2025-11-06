@@ -17,6 +17,7 @@ import type { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from "../types";
 import { formatCurrency } from "@/lib/currency";
 
 interface OrderItem {
+  id?: string; // UUID v4 - ID del detalle (solo para edición)
   inputId: string; // UUID v4
   quantity: number;
   unitPrice: number; // Precio unitario
@@ -86,6 +87,7 @@ export default function PurchaseOrderFormPage() {
             setSupplierId(order.supplierId);
             setItems(
               order.details.map((detail) => ({
+                id: detail.id, // Guardar el ID del detalle para la actualización
                 inputId: detail.input?.id || detail.inputId,
                 quantity: detail.quantity,
                 unitPrice: detail.unitPrice,
@@ -161,7 +163,17 @@ export default function PurchaseOrderFormPage() {
     let success = false;
 
     if (isEditing && id) {
-      const updateDto: UpdatePurchaseOrderDto = dto;
+      // Para actualización, necesitamos el DTO con los IDs de los detalles
+      const updateDto: UpdatePurchaseOrderDto = {
+        supplierId,
+        status: "PENDIENTE",
+        totalAmount,
+        details: validItems.map((item) => ({
+          id: item.id!, // El ID del detalle debe existir al editar
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      };
       const result = await updatePurchaseOrder(id, updateDto);
       success = !!result;
     } else {
