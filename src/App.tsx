@@ -71,6 +71,7 @@ import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Layout } from './components/layout/layout'
 import MapExample from './common/components/MapExample'
+import { Toaster } from '@/components/ui/sonner'
 
 
 export default function App() {
@@ -116,6 +117,7 @@ export default function App() {
           </Suspense>
       </Layout>
     </ProtectedRoute>
+    <Toaster />
   </ThemeProvider>
   )
 }

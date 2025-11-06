@@ -6,17 +6,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { SupplierForm } from './SupplierForm';
-import type { Supplier, CreateSupplierDto, UpdateSupplierDto } from '../types/supplier';
+import type { Supplier } from '../types/supplier';
 
 interface SupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplier?: Supplier;
-  onSubmit: (data: CreateSupplierDto | UpdateSupplierDto) => Promise<void>;
+  onSubmit: (data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'totalSupplied' | 'totalOrders' | 'purchaseOrders'>) => Promise<void>;
 }
 
 export function SupplierDialog({ open, onOpenChange, supplier, onSubmit }: SupplierDialogProps) {
-  const handleSubmit = async (data: CreateSupplierDto | UpdateSupplierDto) => {
+  const handleSubmit = async (data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'totalSupplied' | 'totalOrders' | 'purchaseOrders'>) => {
     await onSubmit(data);
     onOpenChange(false);
   };
