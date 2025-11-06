@@ -148,7 +148,7 @@ export interface UpdatePurchaseOrderDto {
   status?: string;
   totalAmount?: number;
   details?: {
-    inputId: string; // UUID v4
+    id: string; // UUID v4
     quantity: number;
     unitPrice: number;
   }[];

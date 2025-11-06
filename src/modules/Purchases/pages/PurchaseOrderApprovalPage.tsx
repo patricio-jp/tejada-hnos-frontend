@@ -56,6 +56,7 @@ export default function PurchaseOrderApprovalPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editedDetails, setEditedDetails] = useState<Array<{
     id: string;
+    quantity: number;
     unitPrice: number;
   }>>([]);
 
@@ -83,13 +84,15 @@ export default function PurchaseOrderApprovalPage() {
 
   const handleOpenEdit = (order: PurchaseOrder) => {
     setSelectedOrder(order);
-    // Inicializar precios editables
-    setEditedDetails(
-      order.details.map(detail => ({
-        id: detail.id || "",
-        unitPrice: Number(detail.unitPrice),
-      }))
-    );
+    // Inicializar precios editables - ANTES de abrir el diálogo
+    // Guardar toda la información necesaria, no solo id y unitPrice
+    const initialDetails = order.details.map(detail => ({
+      id: detail.id || "",
+      quantity: Number(detail.quantity),
+      unitPrice: Number(detail.unitPrice),
+    }));
+    console.log("Initial details for editing:", initialDetails);
+    setEditedDetails(initialDetails);
     setEditDialogOpen(true);
   };
 
@@ -126,27 +129,27 @@ export default function PurchaseOrderApprovalPage() {
   const handleSaveEdit = async () => {
     if (!selectedOrder) return;
 
-    // Calcular nuevo total
-    const newTotalAmount = selectedOrder.details.reduce((sum, detail, index) => {
-      const newPrice = editedDetails[index]?.unitPrice || Number(detail.unitPrice);
-      return sum + (Number(detail.quantity) * newPrice);
+    // Calcular nuevo total desde editedDetails
+    const newTotalAmount = editedDetails.reduce((sum, detail) => {
+      return sum + (detail.quantity * detail.unitPrice);
     }, 0);
 
-    // Actualizar orden con nuevos precios
+    // Actualizar orden con nuevos precios usando editedDetails directamente
     const result = await updatePurchaseOrder(selectedOrder.id!, {
       supplierId: selectedOrder.supplierId,
       status: PurchaseOrderStatus.PENDIENTE,
       totalAmount: newTotalAmount,
-      details: selectedOrder.details.map((detail, index) => ({
-        inputId: detail.inputId,
-        quantity: Number(detail.quantity),
-        unitPrice: editedDetails[index]?.unitPrice || Number(detail.unitPrice),
+      details: editedDetails.map((detail) => ({
+        id: detail.id,
+        quantity: detail.quantity,
+        unitPrice: detail.unitPrice,
       })),
     });
 
     if (result) {
       setEditDialogOpen(false);
       setSelectedOrder(null);
+      setEditedDetails([]); // Limpiar estado
       fetchPurchaseOrders();
     }
   };
@@ -160,10 +163,8 @@ export default function PurchaseOrderApprovalPage() {
   };
 
   const calculateEditedTotal = () => {
-    if (!selectedOrder) return 0;
-    return selectedOrder.details.reduce((sum, detail, index) => {
-      const price = editedDetails[index]?.unitPrice || Number(detail.unitPrice);
-      return sum + (Number(detail.quantity) * price);
+    return editedDetails.reduce((sum, detail) => {
+      return sum + (detail.quantity * detail.unitPrice);
     }, 0);
   };
 
@@ -240,7 +241,7 @@ export default function PurchaseOrderApprovalPage() {
 
         {/* Table */}
         <Card>
-          <div className="p-6">
+          <div className="px-6">
             <h2 className="text-xl font-semibold mb-4">Órdenes Pendientes de Aprobación</h2>
             
             {pendingOrders.length === 0 ? (
@@ -278,7 +279,7 @@ export default function PurchaseOrderApprovalPage() {
                             </p>
                             {order.supplier?.taxId && (
                               <p className="text-xs text-muted-foreground">
-                                RUC: {order.supplier.taxId}
+                                CUIT: {order.supplier.taxId}
                               </p>
                             )}
                           </div>
@@ -444,7 +445,14 @@ export default function PurchaseOrderApprovalPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          // Limpiar estado al cerrar
+          setSelectedOrder(null);
+          setEditedDetails([]);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Precios de la Orden</DialogTitle>
@@ -514,7 +522,11 @@ export default function PurchaseOrderApprovalPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setEditDialogOpen(false)}
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSelectedOrder(null);
+                setEditedDetails([]);
+              }}
             >
               Cancelar
             </Button>
