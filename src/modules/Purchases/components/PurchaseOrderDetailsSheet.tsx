@@ -65,24 +65,42 @@ export function PurchaseOrderDetailsSheet({
     ? new Date(purchaseOrder.updatedAt).toLocaleDateString('es-ES')
     : 'N/A';
 
+  // Safely coerce potentially string numeric values coming from the API
+  const totalAmountNumber = Number(purchaseOrder.totalAmount ?? 0);
+
+  // Format numbers as Argentine pesos: $ with '.' as thousand separator and ',' as decimal
+  const formatCurrency = (value: number) => {
+    try {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+    } catch {
+      // Fallback to a simple formatter
+      return `$ ${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".").replace('.', ',')}`;
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
+          <div className="flex">
+            <div className="space-y-2">
               <SheetTitle className="text-2xl">
                 Orden #{purchaseOrder.id?.substring(0, 8)}
               </SheetTitle>
+              <StatusBadge status={purchaseOrder.status} />
               <SheetDescription>
                 Detalles de la orden de compra
               </SheetDescription>
             </div>
-            <StatusBadge status={purchaseOrder.status} />
           </div>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="px-4 space-y-6">
           {/* Información del Proveedor - Card destacado */}
           <div className="p-4 bg-muted/50 rounded-lg space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -94,7 +112,7 @@ export function PurchaseOrderDetailsSheet({
             </p>
             {purchaseOrder.supplier?.taxId && (
               <p className="text-sm text-muted-foreground">
-                🏢 RUC: {purchaseOrder.supplier.taxId}
+                🏢 CUIT: {purchaseOrder.supplier.taxId}
               </p>
             )}
             {purchaseOrder.supplier?.contactEmail && (
@@ -137,7 +155,7 @@ export function PurchaseOrderDetailsSheet({
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Total de la orden</span>
               <span className="text-2xl font-bold text-primary">
-                S/ {purchaseOrder.totalAmount?.toFixed(2) || '0.00'}
+                {formatCurrency(totalAmountNumber)}
               </span>
             </div>
           </div>
@@ -167,8 +185,11 @@ export function PurchaseOrderDetailsSheet({
                   </TableHeader>
                   <TableBody>
                     {purchaseOrder.details.map((detail, index) => {
-                      const quantityReceived = detail.quantityReceived || 0;
-                      const pending = detail.quantity - quantityReceived;
+                      // Coerce numeric-like fields to numbers in case API returns strings
+                      const quantity = Number(detail.quantity ?? 0);
+                      const quantityReceived = Number(detail.quantityReceived ?? 0);
+                      const unitPrice = Number(detail.unitPrice ?? 0);
+                      const pending = quantity - quantityReceived;
                       const isComplete = pending === 0;
                       
                       return (
@@ -184,7 +205,7 @@ export function PurchaseOrderDetailsSheet({
                                 </p>
                               )}
                               <p className="text-xs text-muted-foreground mt-1">
-                                Precio: S/ {detail.unitPrice.toFixed(2)}
+                                Precio: {formatCurrency(unitPrice)}
                               </p>
                             </div>
                           </TableCell>
@@ -193,8 +214,8 @@ export function PurchaseOrderDetailsSheet({
                               <p className="font-medium">
                                 {detail.quantity} {detail.input?.unit || "und"}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                S/ {(detail.quantity * detail.unitPrice).toFixed(2)}
+                                <p className="text-xs text-muted-foreground">
+                                {formatCurrency(quantity * unitPrice)}
                               </p>
                             </div>
                           </TableCell>
