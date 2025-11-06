@@ -61,6 +61,8 @@ const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'))
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
 const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
+const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
+const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -95,6 +97,13 @@ export default function App() {
               <Route path="activities">
                 <Route index element={<ActivitiesDashboard />} />
                 <Route path="list" element={<ActivitiesListPage />} />
+              </Route>
+
+              {/* Rutas de Órdenes de Compra */}
+              <Route path="purchases">
+                <Route index element={<PurchaseOrdersListPage />} />
+                <Route path="new" element={<PurchaseOrderFormPage />} />
+                <Route path="edit/:id" element={<PurchaseOrderFormPage />} />
               </Route>
 
               <Route path="reports" element={<PaginaNoImplementada />} />
