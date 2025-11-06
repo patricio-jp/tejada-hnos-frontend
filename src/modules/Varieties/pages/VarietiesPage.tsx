@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { VarietiesTable } from '../components/VarietiesTable';
 import { VarietyDialog } from '../components/VarietyDialog';
 import { useVarieties } from '../hooks/useVarieties';
@@ -30,6 +30,9 @@ export default function VarietiesPage() {
   const [selectedVariety, setSelectedVariety] = useState<Variety | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [varietyToDelete, setVarietyToDelete] = useState<Variety | undefined>();
+  
+  // Estado de loading para prevenir múltiples clics y mostrar feedback visual
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCreate = () => {
     setSelectedVariety(undefined);
@@ -46,11 +49,33 @@ export default function VarietiesPage() {
     setDeleteDialogOpen(true);
   };
 
+  /**
+   * Confirmar eliminación permanente de una variedad.
+   * ⚠️ OPERACIÓN CRÍTICA E IRREVERSIBLE ⚠️
+   * 
+   * IMPORTANTE: No existe restore() para variedades, el delete es permanente.
+   * Incluye:
+   * - Prevención de doble click
+   * - Manejo de errores robusto con try-catch
+   * - NO cierra dialog en error (permite reintentar o cancelar)
+   * - Feedback visual claro durante la operación
+   */
   const confirmDelete = async () => {
-    if (varietyToDelete) {
+    if (!varietyToDelete || isDeleting) return;
+    
+    setIsDeleting(true);
+    try {
       await deleteVariety(varietyToDelete.id);
+      // Solo cerrar el dialog si la operación fue exitosa
       setDeleteDialogOpen(false);
       setVarietyToDelete(undefined);
+      // TODO: Mostrar toast de éxito
+    } catch (err) {
+      // TODO: Mostrar toast de error con mensaje claro
+      // NO cerrar el dialog para que el usuario pueda reintentar o cancelar
+      console.error('Error al eliminar variedad:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -106,19 +131,38 @@ export default function VarietiesPage() {
         onSubmit={handleSubmit}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* AlertDialog de confirmación con mejoras de UX */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
+        // Prevenir cerrar el dialog mientras está procesando (CRÍTICO)
+        if (!isDeleting) {
+          setDeleteDialogOpen(open);
+          if (!open) setVarietyToDelete(undefined);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle>⚠️ ¿Eliminar permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription className="text-destructive">
               Esta acción eliminará permanentemente la variedad "{varietyToDelete?.name}".
-              Esta acción NO se puede revertir.
+              <br />
+              <strong>Esta acción NO se puede deshacer.</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              Eliminar Permanentemente
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando permanentemente...
+                </>
+              ) : (
+                'Eliminar Permanentemente'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
