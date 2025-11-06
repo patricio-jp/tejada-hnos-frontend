@@ -170,6 +170,7 @@ export default function PurchaseOrderFormPage() {
         totalAmount,
         details: validItems.map((item) => ({
           id: item.id!, // El ID del detalle debe existir al editar
+          inputId: item.inputId, // Incluir inputId para items nuevos
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),
