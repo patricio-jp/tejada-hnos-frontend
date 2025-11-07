@@ -66,11 +66,17 @@ const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
 
+// Páginas de catálogos
+const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'));
+const CustomersPage = React.lazy(() => import('./modules/Customers/pages/CustomersPage'));
+const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/VarietiesPage'));
+
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AdminRoute } from '@/components/AdminRoute'
 import { Layout } from './components/layout/layout'
 import MapExample from './common/components/MapExample'
+import { Toaster } from '@/components/ui/sonner'
 
 
 export default function App() {
@@ -102,6 +108,10 @@ export default function App() {
                 <Route path="list" element={<ActivitiesListPage />} />
               </Route>
 
+              {/* Rutas de Catálogos */}
+              <Route path="suppliers" element={<SuppliersPage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="varieties" element={<VarietiesPage />} />
               {/* Rutas de Órdenes de Compra */}
               <Route path="purchases">
                 <Route index element={<PurchaseOrdersListPage />} />
@@ -136,6 +146,7 @@ export default function App() {
           </Suspense>
       </Layout>
     </ProtectedRoute>
+    <Toaster />
   </ThemeProvider>
   )
 }
