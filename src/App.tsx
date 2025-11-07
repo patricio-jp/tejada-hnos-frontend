@@ -61,6 +61,10 @@ const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'))
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
 const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
+const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
+const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
+const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
+const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'));
@@ -69,6 +73,7 @@ const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/Varieti
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AdminRoute } from '@/components/AdminRoute'
 import { Layout } from './components/layout/layout'
 import MapExample from './common/components/MapExample'
 import { Toaster } from '@/components/ui/sonner'
@@ -107,6 +112,30 @@ export default function App() {
               <Route path="suppliers" element={<SuppliersPage />} />
               <Route path="customers" element={<CustomersPage />} />
               <Route path="varieties" element={<VarietiesPage />} />
+              {/* Rutas de Órdenes de Compra */}
+              <Route path="purchases">
+                <Route index element={<PurchaseOrdersListPage />} />
+                <Route path="new" element={<PurchaseOrderFormPage />} />
+                <Route path="edit/:id" element={<PurchaseOrderFormPage />} />
+                {/* Ruta de aprobación solo para ADMIN */}
+                <Route 
+                  path="approvals" 
+                  element={
+                    <AdminRoute>
+                      <PurchaseOrderApprovalPage />
+                    </AdminRoute>
+                  } 
+                />
+                {/* Ruta de cierre solo para ADMIN */}
+                <Route 
+                  path="closure" 
+                  element={
+                    <AdminRoute>
+                      <PurchaseOrderClosurePage />
+                    </AdminRoute>
+                  } 
+                />
+              </Route>
 
               <Route path="reports" element={<PaginaNoImplementada />} />
               <Route path="users" element={<PaginaNoImplementada />} />
