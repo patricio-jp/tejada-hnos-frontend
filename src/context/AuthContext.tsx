@@ -2,10 +2,13 @@
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import type { ReactNode } from 'react'
+import useAuthHook from '@/modules/Auth/hooks/useAuth'
 
 type AuthUser = {
   id?: string | number
@@ -30,21 +33,11 @@ type AuthContextValue = {
   login: (credentials: LoginCredentials) => Promise<void>
   logout: () => void
   clearError: () => void
+  checkSession: () => Promise<boolean>
+  refreshAccessToken: () => Promise<boolean>
 }
 
-const ACCESS_TOKEN_KEY = 'access_token'
-const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'auth_user'
-
-
-function readStoredValue(key: string) {
-  if (typeof window === 'undefined') return null
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
 
 function readStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') return null
@@ -65,25 +58,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  const parts = token.split('.')
-  if (parts.length < 2) return null
-  const payload = parts[1]
-  try {
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
-    if (typeof window === 'undefined' || typeof window.atob !== 'function') {
-      return null
-    }
-    const json = window.atob(padded)
-    return JSON.parse(json)
-  } catch {
-    return null
-  }
-}
-
-function inferUserFromToken(token: string): AuthUser | null {
-  const payload = decodeJwtPayload(token)
+function inferUserFromPayload(payload: Record<string, unknown> | null): AuthUser | null {
   if (!payload) return null
 
   const candidateId = payload.userId ?? payload.id ?? payload.sub
@@ -111,66 +86,57 @@ function inferUserFromToken(token: string): AuthUser | null {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const initialAccessToken = readStoredValue(ACCESS_TOKEN_KEY)
-  const [accessToken, setAccessToken] = useState<string | null>(initialAccessToken)
-  const [refreshToken, setRefreshToken] = useState<string | null>(readStoredValue(REFRESH_TOKEN_KEY))
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const storedUser = readStoredUser()
-    if (storedUser) return storedUser
-    if (initialAccessToken) return inferUserFromToken(initialAccessToken)
-    return null
-  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const clearSession = useCallback(() => {
-    setAccessToken(null)
-    setRefreshToken(null)
-    setUser(null)
-    if (typeof window === 'undefined') return
+  // Callback para limpiar usuario cuando el hook cierre sesión
+  const handleLogout = useCallback(() => {
     try {
-      window.localStorage.removeItem(ACCESS_TOKEN_KEY)
-      window.localStorage.removeItem(REFRESH_TOKEN_KEY)
       window.localStorage.removeItem(USER_KEY)
     } catch {
-      /* ignore */
+      // ignore
     }
   }, [])
 
-  const persistSession = useCallback(
-    (token: string, nextRefreshToken: string | null, nextUser: AuthUser | null) => {
-      const resolvedUser = nextUser ?? inferUserFromToken(token)
+  // Usar el hook useAuth para la gestión de tokens
+  const auth = useAuthHook({
+    accessTokenKey: 'access_token',
+    refreshTokenKey: 'refresh_token',
+    refreshUrl: '/api/auth/refresh-token',
+    onLogout: handleLogout,
+  })
 
-      setAccessToken(token)
-      setRefreshToken(nextRefreshToken)
-      setUser(resolvedUser)
+  // Recuperar usuario del localStorage o del token
+  const user = useMemo(() => {
+    const storedUser = readStoredUser()
+    if (storedUser) return storedUser
+    if (auth.accessPayload) return inferUserFromPayload(auth.accessPayload)
+    return null
+  }, [auth.accessPayload])
 
-      if (typeof window === 'undefined') return
+  // Sincronizar usuario con localStorage
+  useEffect(() => {
+    if (user) {
       try {
-        window.localStorage.setItem(ACCESS_TOKEN_KEY, token)
-        if (nextRefreshToken) {
-          window.localStorage.setItem(REFRESH_TOKEN_KEY, nextRefreshToken)
-        } else {
-          window.localStorage.removeItem(REFRESH_TOKEN_KEY)
-        }
-        if (resolvedUser) {
-          window.localStorage.setItem(USER_KEY, JSON.stringify(resolvedUser))
-        } else {
-          window.localStorage.removeItem(USER_KEY)
-        }
+        window.localStorage.setItem(USER_KEY, JSON.stringify(user))
       } catch {
-        /* ignore storage errors */
+        // ignore
       }
-    },
-    [],
-  )
+    } else {
+      try {
+        window.localStorage.removeItem(USER_KEY)
+      } catch {
+        // ignore
+      }
+    }
+  }, [user])
 
   const login = useCallback(
     async ({ email, password }: LoginCredentials) => {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch('/api/auth/login', { // ¡La ruta del Desvío!
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -192,17 +158,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error('Respuesta inesperada del servidor.')
         }
 
-        // --- ¡¡¡INICIO DEL ARREGLO FINAL!!! ---
-        // El backend nos devuelve { message: '...', data: { ... } }
-        // ¡El token está adentro de "data"!
         if (!isPlainObject(payload.data)) {
-          throw new Error('La respuesta del servidor no tiene el formato esperado (falta "data").');
+          throw new Error('La respuesta del servidor no tiene el formato esperado (falta "data").')
         }
 
-        const data = payload.data as Record<string, unknown>; // ¡Usamos "data"!
-        // --- FIN DEL ARREGLO ---
+        const data = payload.data as Record<string, unknown>
 
-        const access = data.accessToken ?? data.access_token // ¡Buscamos en "data"!
+        const access = data.accessToken ?? data.access_token
         if (typeof access !== 'string' || access.length === 0) {
           throw new Error('La respuesta del servidor no incluye un token válido.')
         }
@@ -221,9 +183,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? ((data.user ?? (data as Record<string, unknown>).profile) as AuthUser)
             : null
 
-        persistSession(access, normalizedRefresh, userValue)
+        // Guardar usuario en localStorage
+        if (userValue) {
+          try {
+            window.localStorage.setItem(USER_KEY, JSON.stringify(userValue))
+          } catch {
+            // ignore
+          }
+        }
+
+        // Usar el método login del hook para guardar los tokens
+        auth.login(access, normalizedRefresh ?? undefined)
       } catch (err) {
-        clearSession()
+        auth.logout()
+        try {
+          window.localStorage.removeItem(USER_KEY)
+        } catch {
+          // ignore
+        }
         const message = err instanceof Error ? err.message : 'No se pudo iniciar sesión.'
         setError(message)
         throw err instanceof Error ? err : new Error(message)
@@ -231,31 +208,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       }
     },
-    [persistSession, clearSession],
+    [auth]
   )
 
   const logout = useCallback(() => {
-    clearSession()
+    auth.logout()
     setError(null)
-  }, [clearSession])
+    try {
+      window.localStorage.removeItem(USER_KEY)
+    } catch {
+      // ignore
+    }
+  }, [auth])
 
   const clearError = useCallback(() => setError(null), [])
 
-  const isAuthenticated = useMemo(() => Boolean(accessToken), [accessToken])
+  // Wrapper estable para checkSession
+  const checkSessionRef = useRef(async (): Promise<boolean> => {
+    const isValid = auth.checkAuth()
+    if (isValid) return true
+    if (auth.refreshToken) {
+      return await auth.refreshAccessToken()
+    }
+    return false
+  })
+
+  // Actualizar la referencia cuando auth cambie
+  useEffect(() => {
+    checkSessionRef.current = async (): Promise<boolean> => {
+      const isValid = auth.checkAuth()
+      if (isValid) return true
+      if (auth.refreshToken) {
+        return await auth.refreshAccessToken()
+      }
+      return false
+    }
+  }, [auth])
+
+  const checkSession = useCallback(async (): Promise<boolean> => {
+    return checkSessionRef.current()
+  }, [])
 
   const value = useMemo(
     () => ({
       user,
-      accessToken,
-      refreshToken,
-      isAuthenticated,
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+      isAuthenticated: auth.isAuthenticated,
       loading,
       error,
       login,
       logout,
       clearError,
+      checkSession,
+      refreshAccessToken: auth.refreshAccessToken,
     }),
-    [user, accessToken, refreshToken, isAuthenticated, loading, error, login, logout, clearError],
+    [
+      user,
+      auth.accessToken,
+      auth.refreshToken,
+      auth.isAuthenticated,
+      auth.refreshAccessToken,
+      loading,
+      error,
+      login,
+      logout,
+      clearError,
+      checkSession,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
