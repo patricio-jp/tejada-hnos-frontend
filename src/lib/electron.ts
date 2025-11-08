@@ -15,7 +15,7 @@ const detectElectron = () => {
     if (typeof navigator !== 'undefined' && /Electron/.test(navigator.userAgent)) return true
     if (typeof window !== 'undefined' && typeof window.process === 'object' && !!window.process.versions?.electron) return true
     if (typeof window !== 'undefined' && !!window.electron) return true
-  } catch (e) {
+  } catch (_error) {
     // ignore
   }
   return false
@@ -24,7 +24,7 @@ const detectElectron = () => {
 const detectCapacitor = () => {
   try {
     return typeof window !== 'undefined' && !!(window as any).Capacitor
-  } catch (e) {
+  } catch (_error) {
     return false
   }
 }
