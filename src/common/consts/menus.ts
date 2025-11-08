@@ -1,4 +1,4 @@
-import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home } from "lucide-react";
+import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -54,6 +54,48 @@ export const MENUS_MAIN: MenuItem[] = [
         {
           title: "List",
           url: "/activities/list",
+        },
+      ],
+    },
+    {
+      title: "Catálogos",
+      url: "/suppliers",
+      icon: Database,
+      items: [
+        {
+          title: "Proveedores",
+          url: "/suppliers",
+        },
+        {
+          title: "Clientes",
+          url: "/customers",
+        },
+        {
+          title: "Variedades",
+          url: "/varieties",
+        },
+      ],
+    },
+    {
+      title: "Purchase Orders",
+      url: "/purchases",
+      icon: ShoppingCart,
+      items: [
+        {
+          title: "Orders List",
+          url: "/purchases",
+        },
+        {
+          title: "New Order",
+          url: "/purchases/new",
+        },
+        {
+          title: "Approvals (Admin)",
+          url: "/purchases/approvals",
+        },
+        {
+          title: "Closure (Admin)",
+          url: "/purchases/closure",
         },
       ],
     },
