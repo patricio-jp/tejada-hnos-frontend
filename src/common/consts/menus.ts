@@ -1,4 +1,4 @@
-import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, ClipboardList } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -26,6 +26,11 @@ export const MENUS_MAIN: MenuItem[] = [
       title: "Home",
       url: "/dashboard",
       icon: Home,
+    },
+    {
+      title: "Mis Tareas",
+      url: "/work-orders/my-tasks",
+      icon: ClipboardList,
     },
     {
       title: "Fields and Plots",

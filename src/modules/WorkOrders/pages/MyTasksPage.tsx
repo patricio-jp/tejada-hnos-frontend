@@ -1,8 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { ClipboardList, Clock, CheckCircle2, AlertCircle, Calendar } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ClipboardList, Clock, CheckCircle2, AlertCircle } from "lucide-react"
+import { useWorkOrders } from "../hooks/useWorkOrders"
+import { WorkOrderCard } from "../components/WorkOrderCard"
+import { useMemo } from "react"
 
 /**
  * Vista de tareas asignadas para usuarios con rol OPERARIO
@@ -10,6 +12,31 @@ import { ClipboardList, Clock, CheckCircle2, AlertCircle, Calendar } from "lucid
  * Muestra el listado de órdenes de trabajo asignadas al operario logueado
  */
 export default function MyTasksPage() {
+  const { workOrders, loading, error } = useWorkOrders();
+
+  const stats = useMemo(() => {
+    const pending = workOrders.filter(wo => wo.status === 'PENDING').length;
+    const inProgress = workOrders.filter(wo => wo.status === 'IN_PROGRESS').length;
+    const completed = workOrders.filter(wo => wo.status === 'COMPLETED').length;
+    
+    return { pending, inProgress, completed };
+  }, [workOrders]);
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <p>Error al cargar las tareas: {error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="space-y-6">
@@ -34,10 +61,16 @@ export default function MyTasksPage() {
               <Clock className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Tareas por iniciar
-              </p>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.pending}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tareas por iniciar
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -47,10 +80,16 @@ export default function MyTasksPage() {
               <AlertCircle className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Tareas activas
-              </p>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.inProgress}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tareas activas
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -60,10 +99,16 @@ export default function MyTasksPage() {
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Esta semana
-              </p>
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.completed}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Este mes
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -78,58 +123,37 @@ export default function MyTasksPage() {
                   Revisa y actualiza el estado de tus tareas
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                Filtrar por fecha
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Estado vacío */}
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-6 mb-4">
-                <ClipboardList className="h-12 w-12 text-muted-foreground" />
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
               </div>
-              <h3 className="text-lg font-semibold mb-2">
-                No tienes tareas asignadas
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Las órdenes de trabajo asignadas por tu supervisor aparecerán aquí.
-                Podrás ver los detalles y actualizar su estado.
-              </p>
-            </div>
-
-            <Separator className="my-4" />
-
-            {/* Información adicional */}
-            <div className="rounded-lg bg-muted p-4">
-              <div className="flex gap-4 text-sm">
-                <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="font-medium">¿Cuándo aparecerán las tareas?</p>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Cuando tu capataz o administrador te asigne una orden de trabajo
-                    </p>
-                  </div>
+            ) : workOrders.length === 0 ? (
+              /* Estado vacío */
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-6 mb-4">
+                  <ClipboardList className="h-12 w-12 text-muted-foreground" />
                 </div>
+                <h3 className="text-lg font-semibold mb-2">
+                  No tienes tareas asignadas
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Las órdenes de trabajo asignadas por tu supervisor aparecerán aquí.
+                  Podrás ver los detalles y registrar actividades realizadas.
+                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Historial de tareas completadas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Historial de Tareas</CardTitle>
-            <CardDescription>
-              Órdenes completadas en los últimos 30 días
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-8">
-              El historial de tareas se mostrará aquí cuando completes órdenes de trabajo
-            </p>
+            ) : (
+              /* Listado de órdenes de trabajo */
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {workOrders.map((workOrder) => (
+                  <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
