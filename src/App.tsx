@@ -1,16 +1,6 @@
 import React, { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 
-
-function Dashboard() {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="mt-2">Bienvenido al panel principal.</p>
-    </div>
-  )
-}
-
 function About() {
   return (
     <div className="p-4">
@@ -70,9 +60,15 @@ const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/Supplie
 const CustomersPage = React.lazy(() => import('./modules/Customers/pages/CustomersPage'));
 const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/VarietiesPage'));
 
+// Páginas de WorkOrders (Operarios)
+const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksPage'));
+
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AdminRoute } from '@/components/AdminRoute'
+import { AdminCapatazRoute } from '@/components/AdminCapatazRoute'
+import { OperarioRoute } from '@/components/OperarioRoute'
+import { RoleBasedDashboard } from '@/components/RoleBasedDashboard'
 import { Layout } from './components/layout/layout'
 import MapExample from './common/components/MapExample'
 import { Toaster } from '@/components/ui/sonner'
@@ -88,32 +84,122 @@ export default function App() {
           <Suspense fallback={<PaginaCargando />}>
             <Routes>
               <Route path="" element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
+              
+              {/* Dashboard con ruteo por rol */}
+              <Route path="dashboard" element={<RoleBasedDashboard />} />
+              
+              {/* Rutas de operarios */}
+              <Route 
+                path="my-tasks" 
+                element={
+                  <OperarioRoute>
+                    <MyTasksPage />
+                  </OperarioRoute>
+                } 
+              />
+              
               <Route path="about" element={<About />} />
               <Route path="protected" element={<Protected />}/>
-              {/* Ruta para la lista de campos */}
+              {/* Ruta para la lista de campos - Solo Admin/Capataz */}
               <Route path="fields">
-                <Route index element={<CamposPage />} />
-                <Route path="list" element={<PaginaNoImplementada />} />
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <CamposPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="list" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PaginaNoImplementada />
+                    </AdminCapatazRoute>
+                  } 
+                />
                 {/* Ruta para el editor de parcelas */}
-                <Route path=":fieldId" element={<ParcelaPage />} />
+                <Route 
+                  path=":fieldId" 
+                  element={
+                    <AdminCapatazRoute>
+                      <ParcelaPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
               </Route>
 
-              {/* Rutas de Actividades */}
+              {/* Rutas de Actividades - Solo Admin/Capataz */}
               <Route path="activities">
-                <Route index element={<ActivitiesDashboard />} />
-                <Route path="list" element={<ActivitiesListPage />} />
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <ActivitiesDashboard />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="list" 
+                  element={
+                    <AdminCapatazRoute>
+                      <ActivitiesListPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
               </Route>
 
-              {/* Rutas de Catálogos */}
-              <Route path="suppliers" element={<SuppliersPage />} />
-              <Route path="customers" element={<CustomersPage />} />
-              <Route path="varieties" element={<VarietiesPage />} />
-              {/* Rutas de Órdenes de Compra */}
+              {/* Rutas de Catálogos - Solo Admin/Capataz */}
+              <Route 
+                path="suppliers" 
+                element={
+                  <AdminCapatazRoute>
+                    <SuppliersPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="customers" 
+                element={
+                  <AdminCapatazRoute>
+                    <CustomersPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="varieties" 
+                element={
+                  <AdminCapatazRoute>
+                    <VarietiesPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              {/* Rutas de Órdenes de Compra - Admin/Capataz para crear/editar, solo Admin para aprobar/cerrar */}
               <Route path="purchases">
-                <Route index element={<PurchaseOrdersListPage />} />
-                <Route path="new" element={<PurchaseOrderFormPage />} />
-                <Route path="edit/:id" element={<PurchaseOrderFormPage />} />
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <PurchaseOrdersListPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="new" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PurchaseOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="edit/:id" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PurchaseOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
                 {/* Ruta de aprobación solo para ADMIN */}
                 <Route 
                   path="approvals" 
@@ -134,9 +220,31 @@ export default function App() {
                 />
               </Route>
 
-              <Route path="reports" element={<PaginaNoImplementada />} />
-              <Route path="users" element={<PaginaNoImplementada />} />
-              <Route path="settings" element={<PaginaNoImplementada />} />
+              {/* Rutas administrativas - Solo Admin/Capataz */}
+              <Route 
+                path="reports" 
+                element={
+                  <AdminCapatazRoute>
+                    <PaginaNoImplementada />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="users" 
+                element={
+                  <AdminCapatazRoute>
+                    <PaginaNoImplementada />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="settings" 
+                element={
+                  <AdminCapatazRoute>
+                    <PaginaNoImplementada />
+                  </AdminCapatazRoute>
+                } 
+              />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
