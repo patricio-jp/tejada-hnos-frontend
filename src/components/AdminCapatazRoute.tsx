@@ -1,20 +1,18 @@
-// src/components/AdminRoute.tsx
-
 import useAuth from "@/modules/Auth/hooks/useAuth";
 import { Navigate } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
 
-interface AdminRouteProps {
+interface AdminCapatazRouteProps {
   children: React.ReactElement;
 }
 
 /**
- * Componente para proteger rutas que solo pueden ser accedidas por administradores
- * Verifica que el usuario esté autenticado Y tenga el rol ADMIN
+ * Componente para proteger rutas que solo pueden ser accedidas por ADMIN o CAPATAZ
+ * Verifica que el usuario esté autenticado Y tenga uno de estos roles
  */
-export function AdminRoute({ children }: AdminRouteProps) {
+export function AdminCapatazRoute({ children }: AdminCapatazRouteProps) {
   const auth = useAuth();
   const authed = auth.isAuthenticated;
   
@@ -26,8 +24,13 @@ export function AdminRoute({ children }: AdminRouteProps) {
   // Verificar el rol del usuario desde el payload del token
   const userRole = auth.accessPayload?.role;
   
-  // Si no es ADMIN, redirigir a la página principal o mostrar mensaje
-  if (userRole !== 'ADMIN') {
+  // Si es OPERARIO, redirigir a my-tasks
+  if (userRole === 'OPERARIO') {
+    return <Navigate to="/my-tasks" replace />;
+  }
+
+  // Si no es ADMIN ni CAPATAZ, mostrar mensaje de acceso denegado
+  if (userRole !== 'ADMIN' && userRole !== 'CAPATAZ') {
     return (
       <div className="container mx-auto py-10 px-4">
         <div className="flex flex-col items-center justify-center min-h-[500px]">
@@ -38,19 +41,19 @@ export function AdminRoute({ children }: AdminRouteProps) {
                   <ShieldAlert className="h-8 w-8 text-destructive" />
                 </div>
               </div>
-              <CardTitle className="text-2xl">Acceso Restringido</CardTitle>
+              <CardTitle className="text-2xl">Acceso Denegado</CardTitle>
               <CardDescription className="text-base mt-2">
-                Esta función requiere permisos de administrador
+                No tienes permisos para acceder a esta sección
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                Solo los administradores pueden acceder a esta sección.
-                Si necesitas realizar esta acción, contacta a tu administrador.
+                Esta página solo está disponible para administradores y capataces.
+                Si crees que esto es un error, contacta a tu supervisor.
               </p>
               <Button asChild className="w-full">
-                <a href="/dashboard">
-                  Volver al Dashboard
+                <a href="/my-tasks">
+                  Ir a Mis Tareas
                 </a>
               </Button>
             </CardContent>
