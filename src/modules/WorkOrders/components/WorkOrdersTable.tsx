@@ -43,6 +43,13 @@ function formatStatus(status: WorkOrder['status']): StatusBadge {
   }
 }
 
+function formatDate(value: string | undefined | null): string {
+  if (!value) return 'Sin fecha';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Fecha inválida';
+  return date.toLocaleDateString('es-AR', { timeZone: 'UTC' });
+}
+
 export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
   return (
     <Table>
@@ -77,7 +84,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                     {status.label}
                   </Badge>
                 </TableCell>
-                <TableCell>{workOrder.scheduledDate}</TableCell>
+                <TableCell>{formatDate(workOrder.scheduledDate)}</TableCell>
                 <TableCell>{workOrder.assignedTo?.name ?? 'Sin asignar'}</TableCell>
                 <TableCell>{firstPlotName}</TableCell>
                 <TableCell className="text-right">
