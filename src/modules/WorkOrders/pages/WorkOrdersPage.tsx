@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useWorkOrders } from '../hooks/useWorkOrders';
+import { WorkOrdersTable } from '../components/WorkOrdersTable';
 
 export function WorkOrdersPage() {
   const { workOrders, loading, error, refetch } = useWorkOrders();
@@ -34,9 +35,7 @@ export function WorkOrdersPage() {
       </div>
 
       <div className="rounded-md border bg-card p-4">
-        <pre className="text-sm whitespace-pre-wrap break-words">
-          {JSON.stringify(workOrders, null, 2)}
-        </pre>
+        <WorkOrdersTable workOrders={workOrders} />
       </div>
     </div>
   );
