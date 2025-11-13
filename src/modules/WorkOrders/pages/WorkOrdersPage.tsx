@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router';
 import { useWorkOrders } from '../hooks/useWorkOrders';
 import { WorkOrdersTable } from '../components/WorkOrdersTable';
 
 export function WorkOrdersPage() {
+  const navigate = useNavigate();
   const { workOrders, loading, error, refetch } = useWorkOrders();
 
   if (loading) {
@@ -31,7 +33,7 @@ export function WorkOrdersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Gestión de Órdenes de Trabajo</h1>
           <p className="text-muted-foreground">Visualiza y administra las órdenes activas.</p>
         </div>
-        <Button>Nueva OT</Button>
+        <Button onClick={() => navigate('/work-orders/new')}>Nueva OT</Button>
       </div>
 
       <div className="rounded-md border bg-card p-4">

@@ -63,6 +63,7 @@ const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/Varieti
 // Páginas de WorkOrders (Operarios)
 const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksPage'))
 const WorkOrdersPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrdersPage'))
+const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderFormPage'))
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -180,6 +181,14 @@ export default function App() {
                 element={
                   <AdminCapatazRoute>
                     <WorkOrdersPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="work-orders/new" 
+                element={
+                  <AdminCapatazRoute>
+                    <WorkOrderFormPage />
                   </AdminCapatazRoute>
                 } 
               />
