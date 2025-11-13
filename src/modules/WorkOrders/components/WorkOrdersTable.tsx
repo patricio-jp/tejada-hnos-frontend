@@ -65,8 +65,9 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
           </TableRow>
         ) : (
           workOrders.map((workOrder) => {
+            const firstPlot = workOrder.plots?.[0] as { name?: string; id?: string } | undefined;
             const status = formatStatus(workOrder.status);
-            const firstPlotName = workOrder.plots?.[0]?.properties?.name ?? workOrder.plots?.[0]?.id ?? 'Sin parcela';
+            const firstPlotName = firstPlot?.name ?? firstPlot?.id ?? 'Sin parcela';
 
             return (
               <TableRow key={workOrder.id}>
