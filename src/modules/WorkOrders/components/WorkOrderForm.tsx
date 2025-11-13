@@ -7,19 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import plotApi from '../utils/plot-api';
+import type { CreateWorkOrderInput } from '../types';
 
 type WorkOrderFormProps = {
   onSubmit?: (payload: WorkOrderFormData) => Promise<void> | void;
   onCancel?: () => void;
 };
 
-export type WorkOrderFormData = {
-  title: string;
-  description: string;
-  scheduledDate: string;
-  dueDate: string;
-  plotIds: string[];
-};
+export type WorkOrderFormData = CreateWorkOrderInput;
 
 type PlotOption = {
   id: string;

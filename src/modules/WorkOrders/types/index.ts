@@ -15,3 +15,11 @@ export interface WorkOrder {
   };
   plots: Plot[];
 }
+
+export interface CreateWorkOrderInput {
+  title: string;
+  description: string;
+  scheduledDate: string;
+  dueDate: string;
+  plotIds: string[];
+}

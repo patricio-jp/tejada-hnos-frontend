@@ -1,5 +1,5 @@
 import apiClient from '@/lib/api-client';
-import type { WorkOrder } from '../types';
+import type { CreateWorkOrderInput, WorkOrder } from '../types';
 
 function readToken() {
   if (typeof window === 'undefined') return null;
@@ -15,7 +15,7 @@ export const workOrderApi = {
     const token = readToken();
     return apiClient.get<WorkOrder>(`/work-orders/${id}`, { token });
   },
-  create(data: WorkOrder): Promise<WorkOrder> {
+  create(data: CreateWorkOrderInput): Promise<WorkOrder> {
     const token = readToken();
     return apiClient.post<WorkOrder>('/work-orders', data, { token });
   },
