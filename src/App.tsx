@@ -56,12 +56,13 @@ const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/p
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
 
 // Páginas de catálogos
-const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'));
-const CustomersPage = React.lazy(() => import('./modules/Customers/pages/CustomersPage'));
-const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/VarietiesPage'));
+const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'))
+const CustomersPage = React.lazy(() => import('./modules/Customers/pages/CustomersPage'))
+const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/VarietiesPage'))
 
 // Páginas de WorkOrders (Operarios)
-const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksPage'));
+const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksPage'))
+const WorkOrdersPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrdersPage'))
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -171,6 +172,14 @@ export default function App() {
                 element={
                   <AdminCapatazRoute>
                     <VarietiesPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="work-orders" 
+                element={
+                  <AdminCapatazRoute>
+                    <WorkOrdersPage />
                   </AdminCapatazRoute>
                 } 
               />
