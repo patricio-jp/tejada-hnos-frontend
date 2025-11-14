@@ -60,6 +60,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
           <TableHead>Fecha Programada</TableHead>
           <TableHead>Fecha Límite</TableHead>
           <TableHead>Asignado a</TableHead>
+          <TableHead>Campo</TableHead>
           <TableHead>Parcela</TableHead>
           <TableHead className="w-[50px] text-right">Acciones</TableHead>
         </TableRow>
@@ -73,9 +74,10 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
           </TableRow>
         ) : (
           workOrders.map((workOrder) => {
-            const firstPlot = workOrder.plots?.[0] as { name?: string; id?: string } | undefined;
+            const firstPlot = workOrder.plots?.[0] as { name?: string; id?: string; field?: { name?: string }; fieldName?: string } | undefined;
             const status = formatStatus(workOrder.status);
             const firstPlotName = firstPlot?.name ?? firstPlot?.id ?? 'Sin parcela';
+            const fieldName = firstPlot?.field?.name ?? firstPlot?.fieldName ?? 'Sin campo';
 
             return (
               <TableRow key={workOrder.id}>
@@ -88,6 +90,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                 <TableCell>{formatDate(workOrder.scheduledDate)}</TableCell>
                 <TableCell>{formatDate(workOrder.dueDate)}</TableCell>
                 <TableCell>{workOrder.assignedTo?.name ?? 'Sin asignar'}</TableCell>
+                <TableCell>{fieldName}</TableCell>
                 <TableCell>{firstPlotName}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
