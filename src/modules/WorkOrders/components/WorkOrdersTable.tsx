@@ -58,6 +58,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
           <TableHead>Título</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Fecha Programada</TableHead>
+          <TableHead>Fecha Límite</TableHead>
           <TableHead>Asignado a</TableHead>
           <TableHead>Parcela</TableHead>
           <TableHead className="w-[50px] text-right">Acciones</TableHead>
@@ -85,6 +86,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>{formatDate(workOrder.scheduledDate)}</TableCell>
+                <TableCell>{formatDate(workOrder.dueDate)}</TableCell>
                 <TableCell>{workOrder.assignedTo?.name ?? 'Sin asignar'}</TableCell>
                 <TableCell>{firstPlotName}</TableCell>
                 <TableCell className="text-right">
