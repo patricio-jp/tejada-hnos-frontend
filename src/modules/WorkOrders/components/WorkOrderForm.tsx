@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Loader2 } from 'lucide-react';
 
@@ -47,29 +47,6 @@ function asString(value: unknown): string | undefined {
     return String(value);
   }
   return undefined;
-}
-
-function extractManagedFieldIds(payload: Record<string, unknown> | null | undefined): string[] {
-  if (!payload) return [];
-
-  const candidates = [
-    (payload as Record<string, unknown>).managedFieldIds,
-    (payload as Record<string, unknown>).managedFields,
-    (payload as Record<string, unknown>).fieldIds,
-    (payload as Record<string, unknown>).fields,
-  ];
-
-  const ids = candidates.flatMap((candidate) => toStringArray(candidate));
-  return Array.from(new Set(ids));
-}
-
-function extractUserId(payload: Record<string, unknown> | null | undefined): string | undefined {
-  if (!payload) return undefined;
-  return (
-    asString((payload as Record<string, unknown>).userId) ??
-    asString((payload as Record<string, unknown>).id) ??
-    asString((payload as Record<string, unknown>).sub)
-  );
 }
 
 function normalizePlots(rawPlots: unknown[]): PlotOption[] {
@@ -136,8 +113,6 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const role = (auth.accessPayload?.role as string | undefined) ?? 'ADMIN';
-  const managedFieldIds = useMemo(() => extractManagedFieldIds(auth.accessPayload), [auth.accessPayload]);
-  const userId = useMemo(() => extractUserId(auth.accessPayload), [auth.accessPayload]);
 
   useEffect(() => {
     let cancelled = false;
