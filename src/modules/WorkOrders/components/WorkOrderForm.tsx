@@ -147,6 +147,8 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
       setPlotsError(null);
       try {
         const data = await plotApi.getAll(auth.accessToken);
+        console.log('--- RESPUESTA CRUDA DEL BACKEND ---');
+        console.log(data);
         const normalized = normalizePlots(data as unknown[]);
         if (!cancelled) {
           setPlots(normalized);
@@ -169,25 +171,7 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
     };
   }, [auth.accessToken]);
 
-  const accessiblePlots = useMemo(() => {
-    if (role === 'ADMIN') {
-      return plots;
-    }
-
-    if (role === 'CAPATAZ') {
-      if (managedFieldIds.length > 0) {
-        return plots.filter((plot) => plot.fieldId && managedFieldIds.includes(plot.fieldId));
-      }
-
-      if (userId) {
-        return plots.filter((plot) => plot.managerIds?.includes(userId));
-      }
-
-      return [];
-    }
-
-    return [];
-  }, [managedFieldIds, plots, role, userId]);
+  const accessiblePlots = plots;
 
   useEffect(() => {
     const visibleIds = new Set(accessiblePlots.map((plot) => plot.id));
