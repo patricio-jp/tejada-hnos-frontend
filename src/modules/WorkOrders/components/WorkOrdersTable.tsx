@@ -1,13 +1,5 @@
-import { MoreHorizontal } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -16,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { WorkOrder } from '../types';
 
 type WorkOrdersTableProps = {
@@ -52,7 +45,8 @@ function formatDate(value: string | undefined | null): string {
 
 export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
   return (
-    <Table>
+    <TooltipProvider>
+      <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Título</TableHead>
@@ -93,30 +87,40 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                 <TableCell>{fieldName}</TableCell>
                 <TableCell>{firstPlotName}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
-                        aria-label="Acciones"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          aria-label="Ver detalles"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Ver detalles</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          aria-label="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Editar</TooltipContent>
+                    </Tooltip>
+                  </div>
                 </TableCell>
               </TableRow>
             );
           })
         )}
       </TableBody>
-    </Table>
+      </Table>
+    </TooltipProvider>
   );
 }
 
