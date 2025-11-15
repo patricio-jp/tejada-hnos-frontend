@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Loader2 } from 'lucide-react';
 
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import plotApi from '../utils/plot-api';
+import { userApi, type User } from '../utils/user-api';
 import type { CreateWorkOrderInput } from '../types';
 
 type WorkOrderFormProps = {
@@ -14,7 +15,9 @@ type WorkOrderFormProps = {
   onCancel?: () => void;
 };
 
-export type WorkOrderFormData = CreateWorkOrderInput;
+export type WorkOrderFormData = CreateWorkOrderInput & {
+  assignedToId?: string;
+};
 
 type PlotOption = {
   id: string;
@@ -105,10 +108,14 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
   const [scheduledDate, setScheduledDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
+  const [assignedToId, setAssignedToId] = useState<string>('');
 
   const [plots, setPlots] = useState<PlotOption[]>([]);
   const [loadingPlots, setLoadingPlots] = useState(true);
   const [plotsError, setPlotsError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -122,8 +129,6 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
       setPlotsError(null);
       try {
         const data = await plotApi.getAll(auth.accessToken);
-        console.log('--- RESPUESTA CRUDA DEL BACKEND ---');
-        console.log(data);
         const normalized = normalizePlots(data as unknown[]);
         if (!cancelled) {
           setPlots(normalized);
@@ -149,6 +154,44 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
   const accessiblePlots = plots;
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsers() {
+      setLoadingUsers(true);
+      setUsersError(null);
+      try {
+        const data = await userApi.getAllUsers(auth.accessToken ?? '');
+        if (!cancelled) {
+          setUsers(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'No se pudieron cargar los usuarios';
+          setUsersError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingUsers(false);
+        }
+      }
+    }
+
+    if (auth.accessToken) {
+      void loadUsers();
+    } else {
+      setLoadingUsers(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.accessToken]);
+
+  const assignableUsers = useMemo(() => {
+    return users.filter((user) => user.role === 'CAPATAZ' || user.role === 'OPERARIO');
+  }, [users]);
+
+  useEffect(() => {
     const visibleIds = new Set(accessiblePlots.map((plot) => plot.id));
     setSelectedPlotIds((prev) => prev.filter((id) => visibleIds.has(id)));
   }, [accessiblePlots]);
@@ -163,11 +206,11 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
   };
 
   const isValid =
-    title.trim().length > 0 &&
-    description.trim().length > 0 &&
-    scheduledDate.trim().length > 0 &&
-    dueDate.trim().length > 0 &&
-    selectedPlotIds.length > 0;
+  title.trim().length > 0 &&
+  description.trim().length > 0 &&
+  scheduledDate.trim().length > 0 &&
+  dueDate.trim().length > 0 &&
+  selectedPlotIds.length > 0;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -186,6 +229,7 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
         scheduledDate,
         dueDate,
         plotIds: selectedPlotIds,
+        assignedToId: assignedToId || undefined,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo guardar la orden de trabajo';
@@ -253,6 +297,30 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
       </div>
 
       <div className="space-y-3">
+        <div className="space-y-2">
+          <Label htmlFor="assignedTo">Asignar a (Opcional)</Label>
+          <select
+            id="assignedTo"
+            value={assignedToId}
+            onChange={(event) => setAssignedToId(event.target.value)}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            disabled={loadingUsers || !!usersError}
+          >
+            <option value="">Sin asignar</option>
+            {assignableUsers.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name} {user.lastName}
+              </option>
+            ))}
+          </select>
+          {loadingUsers && (
+            <p className="text-xs text-muted-foreground">Cargando usuarios...</p>
+          )}
+          {usersError && (
+            <p className="text-xs text-destructive">{usersError}</p>
+          )}
+        </div>
+
         <div>
           <Label>Parcelas *</Label>
           <p className="text-sm text-muted-foreground">
