@@ -28,6 +28,11 @@ export const MENUS_MAIN: MenuItem[] = [
       icon: Home,
     },
     {
+      title: "Mis Tareas",
+      url: "/work-orders/my-tasks",
+      icon: ClipboardList,
+    },
+    {
       title: "Fields and Plots",
       url: "/fields",
       icon: Map,
