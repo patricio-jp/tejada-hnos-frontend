@@ -55,8 +55,14 @@ export const workOrdersApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Error al crear la actividad');
+      const parsed = await response.json().catch(() => ({}));
+      const message =
+        (Array.isArray((parsed as any).errors) &&
+          (parsed as any).errors.length > 0 &&
+          (parsed as any).errors.map((e: any) => e.message).join('; ')) ||
+        (parsed as any).message ||
+        'Error al crear la actividad';
+      throw new Error(message);
     }
 
     const { data } = await response.json();

@@ -186,59 +186,23 @@ export default function WorkOrderDetailPage() {
     <div className="container mx-auto p-4 md:p-6">
       <div className="space-y-4 md:space-y-6">
         {/* Header con botón volver */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/work-orders/my-tasks")}
-              className="self-start md:self-auto"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold tracking-tight break-words">{workOrder.title}</h1>
-              <p className="text-muted-foreground mt-1 text-sm md:text-base line-clamp-2 md:line-clamp-none">{workOrder.description}</p>
-            </div>
-            <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
-              <WorkOrderStatusBadge status={workOrder.status} />
-              {dateWarning && (
-                <Badge 
-                  variant={dateWarning.status === 'overdue' ? 'destructive' : 'warning'}
-                  className="flex items-center gap-1 text-xs"
-                >
-                  {dateWarning.status === 'overdue' ? (
-                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
-                  ) : (
-                    <Clock className="h-3 w-3 md:h-4 md:w-4" />
-                  )}
-                  <span className="whitespace-nowrap">{dateWarning.message}</span>
-                </Badge>
-              )}
-            </div>
+        <div className="flex items-center gap-3 md:gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/work-orders/my-tasks")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight break-words">{workOrder.title}</h1>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base line-clamp-2 md:line-clamp-none">{workOrder.description}</p>
           </div>
-
-          {/* Acciones disponibles */}
-          {workOrderActions.availableActions.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {workOrderActions.availableActions.map((action) => (
-                <Button
-                  key={action.nextStatus}
-                  variant={action.variant || 'default'}
-                  size="sm"
-                  onClick={() => setSelectedAction(action)}
-                  disabled={workOrderActions.loading}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
 
-        <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-          {/* Columna principal */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-[70%_30%]">
+          {/* Columna principal (70%) - Detalles y Actividades */}
+          <div className="space-y-4 md:space-y-6">
             {/* Información general */}
             <Card>
               <CardHeader className="pb-3">
@@ -287,83 +251,60 @@ export default function WorkOrderDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Parcelas asignadas */}
+            {/* Estado y Acciones */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg md:text-xl">Parcelas Asignadas</CardTitle>
-                <CardDescription className="text-xs md:text-sm">
-                  {workOrder.plots?.length || 0} {workOrder.plots?.length === 1 ? 'parcela' : 'parcelas'}
-                </CardDescription>
+                <CardTitle className="text-lg md:text-xl">Estado de la Orden</CardTitle>
               </CardHeader>
-              <CardContent>
-                {workOrder.plots && workOrder.plots.length > 0 ? (
-                  <div className="space-y-2">
-                    {workOrder.plots.map((plot) => (
-                      <div
-                        key={plot.id}
-                        className="flex items-start gap-2 p-2 md:p-3 border rounded-lg"
-                      >
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm md:text-base truncate">{plot.name}</p>
-                          <p className="text-xs md:text-sm text-muted-foreground">
-                            Área: {plot.area} ha
-                            {plot.field && (
-                              <span className="block sm:inline sm:before:content-['•'] sm:before:mx-1">
-                                Campo: {plot.field.name}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs md:text-sm text-muted-foreground text-center py-4">
-                    No hay parcelas asignadas a esta orden de trabajo
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+              <CardContent className="space-y-3 md:space-y-4">
+                <div>
+                  <p className="text-xs md:text-sm font-medium text-muted-foreground mb-2">Estado Actual</p>
+                  <WorkOrderStatusBadge status={workOrder.status} />
+                </div>
 
-            {/* Mapa de parcelas */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg md:text-xl">Ubicación</CardTitle>
-                <CardDescription className="text-xs md:text-sm">
-                  Mapa de las parcelas asignadas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {workOrder.plots && workOrder.plots.length > 0 && plotsGeoJSON.features.length > 0 ? (
-                  <div className="h-[250px] md:h-[400px] rounded-lg overflow-hidden">
-                    <InteractiveMap
-                      initialData={plotsGeoJSON}
-                      editable={false}
-                      initialViewState={mapCenter}
-                      showControls={false}
-                      availableModes={['view']}
-                      defaultMode="view"
-                    />
+                {/* Advertencia de fecha si aplica */}
+                {dateWarning && (
+                  <div className={`flex items-center gap-2 p-3 rounded-lg border-l-4 ${
+                    dateWarning.status === 'overdue'
+                      ? 'border-l-red-500/70 bg-red-50/30 dark:bg-red-900/10 border-red-200/50 dark:border-red-800/30'
+                      : 'border-l-yellow-500/70 bg-yellow-50/30 dark:bg-yellow-900/10 border-yellow-200/50 dark:border-yellow-800/30'
+                  }`}>
+                    {dateWarning.status === 'overdue' ? (
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-500 flex-shrink-0" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
+                    )}
+                    <p className={`text-xs md:text-sm font-medium ${
+                      dateWarning.status === 'overdue' ? 'text-red-700 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'
+                    }`}>
+                      {dateWarning.message}
+                    </p>
                   </div>
-                ) : (
-                  <div className="bg-muted rounded-lg h-[150px] md:h-[200px] flex items-center justify-center">
-                    <div className="text-center text-muted-foreground px-4">
-                      <MapPin className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2" />
-                      <p className="text-xs md:text-sm">
-                        {workOrder.plots && workOrder.plots.length > 0
-                          ? "Las parcelas no tienen geometría definida"
-                          : "No hay parcelas para mostrar en el mapa"}
-                      </p>
+                )}
+
+                {/* Acciones disponibles */}
+                {workOrderActions.availableActions.length > 0 && (
+                  <div className="pt-3 border-t">
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground mb-2">Acciones Disponibles</p>
+                    <div className="flex flex-wrap gap-2">
+                      {workOrderActions.availableActions.map((action) => (
+                        <Button
+                          key={action.nextStatus}
+                          variant={action.variant || 'default'}
+                          size="sm"
+                          onClick={() => setSelectedAction(action)}
+                          disabled={workOrderActions.loading}
+                          className="text-xs md:text-sm"
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Columna lateral - Actividades */}
-          <div className="space-y-4 md:space-y-6">
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-start sm:items-center justify-between gap-2">
@@ -449,6 +390,83 @@ export default function WorkOrderDetailPage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Agrega tu primera actividad
                     </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Columna lateral (30%) - Parcelas y Mapa */}
+          <div className="space-y-4 md:space-y-6">
+            {/* Parcelas asignadas */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg md:text-xl">Parcelas Asignadas</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  {workOrder.plots?.length || 0} {workOrder.plots?.length === 1 ? 'parcela' : 'parcelas'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {workOrder.plots && workOrder.plots.length > 0 ? (
+                  <div className="space-y-2">
+                    {workOrder.plots.map((plot) => (
+                      <div
+                        key={plot.id}
+                        className="flex items-start gap-2 p-2 md:p-3 border rounded-lg"
+                      >
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm md:text-base truncate">{plot.name}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">
+                            Área: {plot.area} ha
+                            {plot.field && (
+                              <span className="block sm:inline sm:before:content-['•'] sm:before:mx-1">
+                                Campo: {plot.field.name}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs md:text-sm text-muted-foreground text-center py-4">
+                    No hay parcelas asignadas a esta orden de trabajo
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Mapa de parcelas */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg md:text-xl">Ubicación</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Mapa de las parcelas asignadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {workOrder.plots && workOrder.plots.length > 0 && plotsGeoJSON.features.length > 0 ? (
+                  <div className="h-[250px] md:h-[400px] rounded-lg overflow-hidden">
+                    <InteractiveMap
+                      initialData={plotsGeoJSON}
+                      editable={false}
+                      initialViewState={mapCenter}
+                      showControls={false}
+                      availableModes={['view']}
+                      defaultMode="view"
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-muted rounded-lg h-[150px] md:h-[200px] flex items-center justify-center">
+                    <div className="text-center text-muted-foreground px-4">
+                      <MapPin className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2" />
+                      <p className="text-xs md:text-sm">
+                        {workOrder.plots && workOrder.plots.length > 0
+                          ? "Las parcelas no tienen geometría definida"
+                          : "No hay parcelas para mostrar en el mapa"}
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>

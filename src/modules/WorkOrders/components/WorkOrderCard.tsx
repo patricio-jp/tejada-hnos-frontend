@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, User, FileText, AlertTriangle, Clock } from "lucide-react";
@@ -95,16 +95,18 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
               {workOrder.activities?.length || 0} {workOrder.activities?.length === 1 ? 'actividad' : 'actividades'}
             </span>
           </div>
-
-          {/* Botón de acción */}
-          <Button 
-            className="w-full mt-1.5 text-xs md:text-sm h-8 md:h-10" 
-            onClick={() => navigate(`/work-orders/${workOrder.id}`)}
-          >
-            Ver Detalle
-          </Button>
         </div>
       </CardContent>
+
+      {/* Footer con botón de acción */}
+      <CardFooter className="">
+        <Button 
+          className="w-full text-xs md:text-sm h-8 md:h-10" 
+          onClick={() => navigate(`/work-orders/${workOrder.id}`)}
+        >
+          Ver Detalle
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
