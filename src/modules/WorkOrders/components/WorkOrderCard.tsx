@@ -28,39 +28,41 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
 
   return (
     <Card className={cardClasses}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">{workOrder.title}</CardTitle>
-            <CardDescription className="mt-1.5">
+      <CardHeader className="p-3 pb-2 md:p-6 md:pb-3">
+        <div className="flex items-start gap-2">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <CardTitle className="text-sm md:text-base lg:text-lg break-words leading-tight">
+              {workOrder.title}
+            </CardTitle>
+            <CardDescription className="mt-1 md:mt-1.5 text-xs md:text-sm line-clamp-2">
               {workOrder.description}
             </CardDescription>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-end gap-1 flex-shrink-0 min-w-fit">
             {dateWarning && (
               <Badge 
                 variant={dateWarning.status === 'overdue' ? 'destructive' : 'warning'}
-                className="flex items-center gap-1 text-xs"
+                className="text-[10px] md:text-xs px-1.5 py-0.5 h-auto whitespace-nowrap flex items-center gap-1"
               >
                 {dateWarning.status === 'overdue' ? (
-                  <AlertTriangle className="h-3 w-3" />
+                  <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                 ) : (
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-3 w-3 flex-shrink-0" />
                 )}
-                {dateWarning.message}
+                <span className="hidden md:inline">{dateWarning.message}</span>
               </Badge>
             )}
             <WorkOrderStatusBadge status={workOrder.status} />
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+        <div className="space-y-1.5 md:space-y-2">
           {/* Información de fechas */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {format(new Date(workOrder.scheduledDate), "dd MMM yyyy", { locale: es })}
+          <div className="flex items-center gap-1.5 text-[11px] md:text-sm text-muted-foreground">
+            <Calendar className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="truncate">
+              {format(new Date(workOrder.scheduledDate), "dd MMM", { locale: es })}
               {' - '}
               {format(new Date(workOrder.dueDate), "dd MMM yyyy", { locale: es })}
             </span>
@@ -68,9 +70,9 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
 
           {/* Parcelas asignadas */}
           {workOrder.plots && workOrder.plots.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>
+            <div className="flex items-center gap-1.5 text-[11px] md:text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+              <span className="truncate">
                 {workOrder.plots.length === 1 
                   ? `${workOrder.plots[0].name}` 
                   : `${workOrder.plots.length} parcelas`}
@@ -80,15 +82,15 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
 
           {/* Usuario asignado */}
           {workOrder.assignedTo && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <User className="h-4 w-4" />
-              <span>{workOrder.assignedTo.name}</span>
+            <div className="flex items-center gap-1.5 text-[11px] md:text-sm text-muted-foreground">
+              <User className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+              <span className="truncate">{workOrder.assignedTo.name}</span>
             </div>
           )}
 
           {/* Actividades */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <FileText className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 text-[11px] md:text-sm text-muted-foreground">
+            <FileText className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
             <span>
               {workOrder.activities?.length || 0} {workOrder.activities?.length === 1 ? 'actividad' : 'actividades'}
             </span>
@@ -96,7 +98,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
 
           {/* Botón de acción */}
           <Button 
-            className="w-full mt-2" 
+            className="w-full mt-1.5 text-xs md:text-sm h-8 md:h-10" 
             onClick={() => navigate(`/work-orders/${workOrder.id}`)}
           >
             Ver Detalle

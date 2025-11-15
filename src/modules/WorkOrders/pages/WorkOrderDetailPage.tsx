@@ -164,63 +164,64 @@ export default function WorkOrderDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="space-y-6">
+    <div className="container mx-auto p-4 md:p-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header con botón volver */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate("/work-orders/my-tasks")}
+            className="self-start md:self-auto"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold tracking-tight">{workOrder.title}</h1>
-            <p className="text-muted-foreground mt-1">{workOrder.description}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight break-words">{workOrder.title}</h1>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base line-clamp-2 md:line-clamp-none">{workOrder.description}</p>
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
             <WorkOrderStatusBadge status={workOrder.status} />
             {dateWarning && (
               <Badge 
                 variant={dateWarning.status === 'overdue' ? 'destructive' : 'warning'}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs"
               >
                 {dateWarning.status === 'overdue' ? (
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
                 ) : (
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-3 w-3 md:h-4 md:w-4" />
                 )}
-                {dateWarning.message}
+                <span className="whitespace-nowrap">{dateWarning.message}</span>
               </Badge>
             )}
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
           {/* Columna principal */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             {/* Información general */}
             <Card>
-              <CardHeader>
-                <CardTitle>Información General</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg md:text-xl">Información General</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Fecha Programada</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Fecha Programada</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                      <p className="text-xs md:text-sm">
                         {format(new Date(workOrder.scheduledDate), "dd 'de' MMMM, yyyy", { locale: es })}
                       </p>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Fecha Límite</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Fecha Límite</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                      <p className="text-xs md:text-sm">
                         {format(new Date(workOrder.dueDate), "dd 'de' MMMM, yyyy", { locale: es })}
                       </p>
                     </div>
@@ -229,18 +230,18 @@ export default function WorkOrderDetailPage() {
 
                 {workOrder.assignedTo && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Asignado a</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-sm">{workOrder.assignedTo.name}</p>
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Asignado a</p>
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                      <p className="text-xs md:text-sm">{workOrder.assignedTo.name}</p>
                     </div>
                   </div>
                 )}
 
                 {workOrder.completedDate && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Fecha de Completado</p>
-                    <p className="text-sm mt-1">
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">Fecha de Completado</p>
+                    <p className="text-xs md:text-sm">
                       {format(new Date(workOrder.completedDate), "dd 'de' MMMM, yyyy", { locale: es })}
                     </p>
                   </div>
@@ -250,9 +251,9 @@ export default function WorkOrderDetailPage() {
 
             {/* Parcelas asignadas */}
             <Card>
-              <CardHeader>
-                <CardTitle>Parcelas Asignadas</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg md:text-xl">Parcelas Asignadas</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
                   {workOrder.plots?.length || 0} {workOrder.plots?.length === 1 ? 'parcela' : 'parcelas'}
                 </CardDescription>
               </CardHeader>
@@ -262,23 +263,25 @@ export default function WorkOrderDetailPage() {
                     {workOrder.plots.map((plot) => (
                       <div
                         key={plot.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
+                        className="flex items-start gap-2 p-2 md:p-3 border rounded-lg"
                       >
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">{plot.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Área: {plot.area} ha
-                              {plot.field && ` • Campo: ${plot.field.name}`}
-                            </p>
-                          </div>
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm md:text-base truncate">{plot.name}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">
+                            Área: {plot.area} ha
+                            {plot.field && (
+                              <span className="block sm:inline sm:before:content-['•'] sm:before:mx-1">
+                                Campo: {plot.field.name}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                  <p className="text-xs md:text-sm text-muted-foreground text-center py-4">
                     No hay parcelas asignadas a esta orden de trabajo
                   </p>
                 )}
@@ -287,15 +290,15 @@ export default function WorkOrderDetailPage() {
 
             {/* Mapa de parcelas */}
             <Card>
-              <CardHeader>
-                <CardTitle>Ubicación</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg md:text-xl">Ubicación</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
                   Mapa de las parcelas asignadas
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {workOrder.plots && workOrder.plots.length > 0 && plotsGeoJSON.features.length > 0 ? (
-                  <div className="h-[400px] rounded-lg overflow-hidden">
+                  <div className="h-[250px] md:h-[400px] rounded-lg overflow-hidden">
                     <InteractiveMap
                       initialData={plotsGeoJSON}
                       editable={false}
@@ -306,10 +309,10 @@ export default function WorkOrderDetailPage() {
                     />
                   </div>
                 ) : (
-                  <div className="bg-muted rounded-lg h-[200px] flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <MapPin className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm">
+                  <div className="bg-muted rounded-lg h-[150px] md:h-[200px] flex items-center justify-center">
+                    <div className="text-center text-muted-foreground px-4">
+                      <MapPin className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2" />
+                      <p className="text-xs md:text-sm">
                         {workOrder.plots && workOrder.plots.length > 0
                           ? "Las parcelas no tienen geometría definida"
                           : "No hay parcelas para mostrar en el mapa"}
@@ -322,48 +325,51 @@ export default function WorkOrderDetailPage() {
           </div>
 
           {/* Columna lateral - Actividades */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Actividades</CardTitle>
-                    <CardDescription className="mt-1.5">
+              <CardHeader className="pb-3">
+                <div className="flex items-start sm:items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg md:text-xl">Actividades</CardTitle>
+                    <CardDescription className="mt-1.5 text-xs md:text-sm">
                       {workOrder.activities?.length || 0} registradas
                     </CardDescription>
                   </div>
                   <Button
                     size="sm"
                     onClick={() => setShowAddActivityDialog(true)}
+                    className="flex-shrink-0"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Agregar</span>
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 {workOrder.activities && workOrder.activities.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {workOrder.activities.map((activity) => (
                       <div
                         key={activity.id}
-                        className="p-3 border rounded-lg space-y-2"
+                        className="p-2 md:p-3 border rounded-lg space-y-2"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-xs md:text-sm">
                               {ACTIVITY_TYPE_LABELS[activity.type] || activity.type}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(activity.executionDate), "dd MMM yyyy", { locale: es })}
                             </p>
                           </div>
-                          <ActivityStatusBadge status={activity.status} />
+                          <div className="flex-shrink-0">
+                            <ActivityStatusBadge status={activity.status} />
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3 md:gap-4 text-xs text-muted-foreground flex-wrap">
                           <div className="flex items-center gap-1">
-                            <FileText className="h-3 w-3" />
+                            <FileText className="h-3 w-3 flex-shrink-0" />
                             <span>{activity.hoursWorked}h</span>
                           </div>
                           {activity.inputsUsed && activity.inputsUsed.length > 0 && (
@@ -378,9 +384,9 @@ export default function WorkOrderDetailPage() {
                           <div className="border-t pt-2 space-y-1">
                             <p className="text-xs font-medium text-muted-foreground">Insumos utilizados:</p>
                             {activity.inputsUsed.map((usage) => (
-                              <div key={usage.id} className="flex justify-between text-xs">
-                                <span>{usage.input?.name || 'Insumo desconocido'}</span>
-                                <span className="text-muted-foreground">
+                              <div key={usage.id} className="flex justify-between gap-2 text-xs">
+                                <span className="truncate">{usage.input?.name || 'Insumo desconocido'}</span>
+                                <span className="text-muted-foreground flex-shrink-0">
                                   {usage.quantityUsed} {usage.input?.unit || ''}
                                 </span>
                               </div>
@@ -389,7 +395,7 @@ export default function WorkOrderDetailPage() {
                         )}
 
                         {activity.details && typeof activity.details === 'string' && (
-                          <p className="text-xs text-muted-foreground border-t pt-2">
+                          <p className="text-xs text-muted-foreground border-t pt-2 break-words">
                             {activity.details}
                           </p>
                         )}
@@ -397,9 +403,9 @@ export default function WorkOrderDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
+                  <div className="text-center py-6 md:py-8">
+                    <FileText className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-xs md:text-sm text-muted-foreground">
                       No hay actividades registradas
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
