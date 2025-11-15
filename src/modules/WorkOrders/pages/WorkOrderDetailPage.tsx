@@ -307,21 +307,35 @@ export default function WorkOrderDetailPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <div className="flex items-start sm:items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg md:text-xl">Actividades</CardTitle>
-                    <CardDescription className="mt-1.5 text-xs md:text-sm">
-                      {workOrder.activities?.length || 0} registradas
-                    </CardDescription>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start sm:items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg md:text-xl">Actividades</CardTitle>
+                      <CardDescription className="mt-1.5 text-xs md:text-sm">
+                        {workOrder.activities?.length || 0} registradas
+                      </CardDescription>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowAddActivityDialog(true)}
+                      disabled={workOrder.status !== 'IN_PROGRESS'}
+                      className="flex-shrink-0"
+                    >
+                      <Plus className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Agregar</span>
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowAddActivityDialog(true)}
-                    className="flex-shrink-0"
-                  >
-                    <Plus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Agregar</span>
-                  </Button>
+                  {workOrder.status !== 'IN_PROGRESS' && (
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/50 border">
+                      <AlertCircle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-muted-foreground">
+                        {workOrder.status === 'PENDING' && 'La orden debe estar "En Progreso" para agregar actividades.'}
+                        {workOrder.status === 'UNDER_REVIEW' && 'La orden está en revisión. No se pueden agregar más actividades hasta que sea reabierta.'}
+                        {workOrder.status === 'COMPLETED' && 'La orden está completada. No se pueden agregar actividades.'}
+                        {workOrder.status === 'CANCELLED' && 'La orden está cancelada. No se pueden agregar actividades.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
