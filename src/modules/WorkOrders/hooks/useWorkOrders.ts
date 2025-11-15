@@ -1,44 +1,77 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { WorkOrder } from '@/modules/WorkOrders/types/work-orders';
-import useAuth from '@/modules/Auth/hooks/useAuth';
-import { workOrdersApi } from '../services/work-orders-api';
+import { useCallback, useEffect, useState } from 'react';
+import { workOrderApi } from '../utils/api';
+import type { CreateWorkOrderInput, WorkOrder } from '../types';
+
+type WorkOrdersState = {
+  workOrders: WorkOrder[];
+  loading: boolean;
+  error: string | null;
+};
+
+type CreateWorkOrderStatus = {
+  loading: boolean;
+  error: Error | null;
+};
 
 export function useWorkOrders() {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuth();
+  const [state, setState] = useState<WorkOrdersState>({
+    workOrders: [],
+    loading: true,
+    error: null,
+  });
+
+  const [createStatus, setCreateStatus] = useState<CreateWorkOrderStatus>({
+    loading: false,
+    error: null,
+  });
 
   const fetchWorkOrders = useCallback(async () => {
-    if (!accessToken) {
-      console.log('useWorkOrders: No access token available, skipping fetch');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    
+    setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const data = await workOrdersApi.getMyWorkOrders(accessToken);
-      setWorkOrders(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      console.error('Error fetching work orders:', err);
-    } finally {
-      setLoading(false);
+      const data = await workOrderApi.getAll();
+      setState({ workOrders: data, loading: false, error: null });
+    } catch (error) {
+      setState({
+        workOrders: [],
+        loading: false,
+        error: error instanceof Error ? error.message : 'Error desconocido al cargar OTs',
+      });
     }
-  }, [accessToken]);
+  }, []);
+
+  const createWorkOrder = useCallback(
+    async (payload: CreateWorkOrderInput) => {
+      setCreateStatus({ loading: true, error: null });
+      try {
+        const created = await workOrderApi.create(payload);
+        setState((prev) => ({
+          ...prev,
+          workOrders: [created, ...prev.workOrders],
+        }));
+        setCreateStatus({ loading: false, error: null });
+        return created;
+      } catch (error) {
+        const normalizedError =
+          error instanceof Error ? error : new Error('No se pudo crear la orden de trabajo');
+        setCreateStatus({ loading: false, error: normalizedError });
+        throw normalizedError;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (accessToken) {
-      fetchWorkOrders();
-    }
-  }, [accessToken, fetchWorkOrders]);
+    void fetchWorkOrders();
+  }, [fetchWorkOrders]);
 
   return {
-    workOrders,
-    loading,
-    error,
+    workOrders: state.workOrders,
+    loading: state.loading,
+    error: state.error,
     refetch: fetchWorkOrders,
+    createWorkOrder,
+    createWorkOrderStatus: createStatus,
   };
 }
+
+export default useWorkOrders;

@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { ChevronRight } from "lucide-react"
 
 import {
@@ -16,16 +17,50 @@ import {
 } from "@/components/ui/sidebar"
 import { NavLink } from "react-router"
 import type { MenuItem } from "@/common/types/menu-item"
+import useAuthHook from "@/modules/Auth/hooks/useAuth"
 
 export function NavMain({
   items
 }: {
   items: MenuItem[]
 }) {
+  const auth = useAuthHook()
+  const userRole = typeof auth.accessPayload?.role === "string" ? auth.accessPayload.role : undefined
+
+  const filteredItems = useMemo(() => {
+    return items
+      .map((item) => {
+        if (item.roles && item.roles.length > 0) {
+          if (!userRole || !item.roles.includes(userRole)) {
+            return null
+          }
+        }
+
+        if (item.items) {
+          const allowedSubItems = item.items.filter((subItem) => {
+            if (subItem.roles && subItem.roles.length > 0) {
+              if (!userRole) return false
+              return subItem.roles.includes(userRole)
+            }
+            return true
+          })
+
+          if (item.items.length > 0 && allowedSubItems.length === 0) {
+            return null
+          }
+
+          return { ...item, items: allowedSubItems }
+        }
+
+        return item
+      })
+      .filter((item): item is MenuItem => item !== null)
+  }, [items, userRole])
+
   return (
     <SidebarGroup>
       <SidebarMenu>
-        {items.map((item) => 
+        {filteredItems.map((item) => 
           item.items && item.items.length > 0 ? (
             <Collapsible
               key={item.title}
