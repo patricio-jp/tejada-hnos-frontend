@@ -344,9 +344,12 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
-            {accessiblePlots.map((plot) => {
+            {accessiblePlots
+              .slice()
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((plot) => {
               const checked = selectedPlotIds.includes(plot.id);
-              const subtitle = plot.fieldName || plot.fieldId;
+              const subtitle = plot.fieldName;
 
               return (
                 <label
