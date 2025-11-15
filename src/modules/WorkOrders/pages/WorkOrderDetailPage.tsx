@@ -24,6 +24,9 @@ import { es } from "date-fns/locale";
 import InteractiveMap from "@/common/components/InteractiveMap";
 import type { FeatureCollection } from "geojson";
 import { getDateWarning } from "../utils/date-helpers";
+import { useWorkOrderActions } from "../hooks/useWorkOrderActions";
+import { WorkOrderActionDialog } from "../components/WorkOrderActionDialog";
+import type { WorkOrderStatus } from "../types/work-orders";
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   PODA: "Poda",
@@ -40,9 +43,25 @@ export default function WorkOrderDetailPage() {
   const navigate = useNavigate();
   const { workOrder, loading, error, refetch } = useWorkOrder(id!);
   const [showAddActivityDialog, setShowAddActivityDialog] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<{
+    label: string;
+    nextStatus: WorkOrderStatus;
+    description: string;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary';
+  } | null>(null);
 
-  // Calcular advertencia de fecha
-  const dateWarning = workOrder && workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED'
+  // Hook para manejar las acciones de estado
+  const workOrderActions = useWorkOrderActions({
+    workOrder: workOrder ? {
+      id: workOrder.id,
+      status: workOrder.status,
+      assignedToId: workOrder.assignedToId,
+    } : { id: '', status: 'PENDING' as WorkOrderStatus, assignedToId: null },
+    onSuccess: refetch,
+  });
+
+  // Calcular advertencia de fecha (no mostrar en UNDER_REVIEW porque ya está esperando aprobación)
+  const dateWarning = workOrder && workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' && workOrder.status !== 'UNDER_REVIEW'
     ? getDateWarning(workOrder.dueDate)
     : null;
 
@@ -167,35 +186,54 @@ export default function WorkOrderDetailPage() {
     <div className="container mx-auto p-4 md:p-6">
       <div className="space-y-4 md:space-y-6">
         {/* Header con botón volver */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate("/work-orders/my-tasks")}
-            className="self-start md:self-auto"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl md:text-3xl font-bold tracking-tight break-words">{workOrder.title}</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base line-clamp-2 md:line-clamp-none">{workOrder.description}</p>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/work-orders/my-tasks")}
+              className="self-start md:self-auto"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold tracking-tight break-words">{workOrder.title}</h1>
+              <p className="text-muted-foreground mt-1 text-sm md:text-base line-clamp-2 md:line-clamp-none">{workOrder.description}</p>
+            </div>
+            <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
+              <WorkOrderStatusBadge status={workOrder.status} />
+              {dateWarning && (
+                <Badge 
+                  variant={dateWarning.status === 'overdue' ? 'destructive' : 'warning'}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  {dateWarning.status === 'overdue' ? (
+                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+                  ) : (
+                    <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                  )}
+                  <span className="whitespace-nowrap">{dateWarning.message}</span>
+                </Badge>
+              )}
+            </div>
           </div>
-          <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
-            <WorkOrderStatusBadge status={workOrder.status} />
-            {dateWarning && (
-              <Badge 
-                variant={dateWarning.status === 'overdue' ? 'destructive' : 'warning'}
-                className="flex items-center gap-1 text-xs"
-              >
-                {dateWarning.status === 'overdue' ? (
-                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
-                ) : (
-                  <Clock className="h-3 w-3 md:h-4 md:w-4" />
-                )}
-                <span className="whitespace-nowrap">{dateWarning.message}</span>
-              </Badge>
-            )}
-          </div>
+
+          {/* Acciones disponibles */}
+          {workOrderActions.availableActions.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {workOrderActions.availableActions.map((action) => (
+                <Button
+                  key={action.nextStatus}
+                  variant={action.variant || 'default'}
+                  size="sm"
+                  onClick={() => setSelectedAction(action)}
+                  disabled={workOrderActions.loading}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
@@ -426,6 +464,18 @@ export default function WorkOrderDetailPage() {
         workOrderId={workOrder.id}
         onActivityCreated={refetch}
       />
+
+      {/* Dialog para confirmar acciones de estado */}
+      {selectedAction && (
+        <WorkOrderActionDialog
+          open={!!selectedAction}
+          onOpenChange={(open) => !open && setSelectedAction(null)}
+          action={selectedAction}
+          onConfirm={workOrderActions.updateStatus}
+          loading={workOrderActions.loading}
+          error={workOrderActions.error}
+        />
+      )}
     </div>
   );
 }

@@ -17,9 +17,10 @@ export default function MyTasksPage() {
   const stats = useMemo(() => {
     const pending = workOrders.filter(wo => wo.status === 'PENDING').length;
     const inProgress = workOrders.filter(wo => wo.status === 'IN_PROGRESS').length;
+    const underReview = workOrders.filter(wo => wo.status === 'UNDER_REVIEW').length;
     const completed = workOrders.filter(wo => wo.status === 'COMPLETED').length;
     
-    return { pending, inProgress, completed };
+    return { pending, inProgress, underReview, completed };
   }, [workOrders]);
 
   if (error) {
@@ -54,7 +55,7 @@ export default function MyTasksPage() {
         </div>
 
         {/* Resumen de tareas */}
-        <div className="grid gap-2 grid-cols-3 md:gap-4">
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 md:gap-4">
           <Card>
             <CardHeader className="flex flex-col items-center space-y-1 pb-2 p-2 md:p-6 md:pb-3">
               <div className="flex items-center gap-1 w-full justify-between">
@@ -95,6 +96,29 @@ export default function MyTasksPage() {
                   <div className="text-xl md:text-2xl font-bold">{stats.inProgress}</div>
                   <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">
                     Activas
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-col items-center space-y-1 pb-2 p-2 md:p-6 md:pb-3">
+              <div className="flex items-center gap-1 w-full justify-between">
+                <CardTitle className="text-[10px] md:text-sm font-medium leading-tight truncate flex-1">
+                  En Revisión
+                </CardTitle>
+                <AlertCircle className="h-3 w-3 md:h-4 md:w-4 text-orange-600 flex-shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-2 pt-0 md:p-6 md:pt-0">
+              {loading ? (
+                <Skeleton className="h-6 md:h-8 w-8 md:w-16" />
+              ) : (
+                <>
+                  <div className="text-xl md:text-2xl font-bold">{stats.underReview}</div>
+                  <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1 hidden sm:block">
+                    Esperando
                   </p>
                 </>
               )}

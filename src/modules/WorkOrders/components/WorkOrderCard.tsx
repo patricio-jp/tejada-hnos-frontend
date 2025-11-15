@@ -15,7 +15,7 @@ interface WorkOrderCardProps {
 
 export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
   const navigate = useNavigate();
-  const dateWarning = workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' 
+  const dateWarning = workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED' && workOrder.status !== 'UNDER_REVIEW'
     ? getDateWarning(workOrder.dueDate) 
     : null;
 

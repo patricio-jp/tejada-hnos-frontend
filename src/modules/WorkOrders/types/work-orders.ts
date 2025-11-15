@@ -5,6 +5,7 @@
 export const WorkOrderStatus = {
   PENDING: 'PENDING',
   IN_PROGRESS: 'IN_PROGRESS',
+  UNDER_REVIEW: 'UNDER_REVIEW',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
 } as const;
