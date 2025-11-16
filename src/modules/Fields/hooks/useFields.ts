@@ -169,5 +169,6 @@ export function useFields(initialFilters?: FieldFilters) {
     hardDeleteField,
     getFieldById,
     updateFilters,
+    setFields, // Exponer setFields para actualizaciones locales
   };
 }
