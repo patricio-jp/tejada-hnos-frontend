@@ -14,8 +14,6 @@ Customers/
 │   └── useCustomers.ts       # Hook personalizado para operaciones CRUD
 ├── pages/
 │   └── CustomersPage.tsx     # Página principal del módulo
-├── types/
-│   └── customer.ts           # Tipos TypeScript
 └── utils/
     └── customer-api.ts       # Funciones para llamadas a la API
 ```

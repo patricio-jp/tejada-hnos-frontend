@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CustomerForm } from './CustomerForm';
-import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types/customer';
+import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '@/types';
 
 interface CustomerDialogProps {
   open: boolean;

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '../types/customer';
+import type { Customer, CreateCustomerDto, UpdateCustomerDto } from '@/types';
 
 interface CustomerFormProps {
   customer?: Customer;
