@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { WorkOrder } from '@/types';
+import { canEditWorkOrder } from '../utils/work-order-permissions';
 
 type WorkOrdersTableProps = {
   workOrders: WorkOrder[];
@@ -85,6 +86,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
             const status = formatStatus(workOrder.status);
             const firstPlotName = firstPlot?.name ?? firstPlot?.id ?? 'Sin parcela';
             const fieldName = firstPlot?.field?.name ?? firstPlot?.fieldName ?? 'Sin campo';
+            const isEditable = canEditWorkOrder(workOrder);
 
             return (
               <TableRow key={workOrder.id}>
@@ -114,19 +116,21 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                       </TooltipTrigger>
                       <TooltipContent>Ver detalles</TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(workOrder.id)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                          aria-label="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Editar</TooltipContent>
-                    </Tooltip>
+                    {isEditable && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(workOrder.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                            aria-label="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

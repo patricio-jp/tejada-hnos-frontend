@@ -7,6 +7,9 @@ import { useWorkOrders } from '../hooks/useWorkOrders';
 import { workOrderApi } from '../utils/api';
 import type { CreateWorkOrderDTO, WorkOrder } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { canEditWorkOrder, getEditDisabledReason } from '../utils/work-order-permissions';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
 
 export function WorkOrderFormPage() {
   const navigate = useNavigate();
@@ -26,6 +29,15 @@ export function WorkOrderFormPage() {
         .then((data) => {
           setWorkOrder(data);
           setLoadError(null);
+          
+          // Validar si la orden puede editarse
+          if (!canEditWorkOrder(data)) {
+            const reason = getEditDisabledReason(data);
+            setLoadError(reason);
+            toast.error('No se puede editar esta orden', {
+              description: reason,
+            });
+          }
         })
         .catch((error) => {
           setLoadError(error instanceof Error ? error.message : 'Error al cargar la orden');
@@ -35,7 +47,7 @@ export function WorkOrderFormPage() {
           setLoading(false);
         });
     }
-  }, [id, isEditMode]);
+  }, [id, isEditMode, navigate]);
 
   const handleSubmit = useCallback(
     async (formData: CreateWorkOrderDTO) => {
@@ -81,10 +93,37 @@ export function WorkOrderFormPage() {
   }
 
   if (loadError) {
+    const isEditRestricted = workOrder && !canEditWorkOrder(workOrder);
+    
     return (
       <div className="container mx-auto max-w-3xl p-6">
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {loadError}
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3">
+            <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <p className="text-sm font-medium text-destructive">
+                {isEditRestricted ? 'Esta orden no puede editarse' : 'Error al cargar la orden'}
+              </p>
+              <p className="text-sm text-destructive/80">{loadError}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/work-orders')}
+            >
+              Volver a órdenes de trabajo
+            </Button>
+            {workOrder && (
+              <Button
+                variant="default"
+                onClick={() => navigate(`/work-orders/${workOrder.id}`)}
+              >
+                Ver detalles
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
