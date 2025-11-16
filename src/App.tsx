@@ -47,6 +47,7 @@ const PaginaCargando = () => (
  * Para optimizar el rendimiento de la aplicación
  */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
+const FieldsTestPage = React.lazy(() => import('./modules/Fields/pages/FieldsTestPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
@@ -161,6 +162,15 @@ export default function App() {
                   element={
                     <AdminCapatazRoute>
                       <PaginaNoImplementada />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Ruta de pruebas de API */}
+                <Route 
+                  path="test" 
+                  element={
+                    <AdminCapatazRoute>
+                      <FieldsTestPage />
                     </AdminCapatazRoute>
                   } 
                 />

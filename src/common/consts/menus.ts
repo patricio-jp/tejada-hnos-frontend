@@ -44,6 +44,10 @@ export const MENUS_MAIN: MenuItem[] = [
         {
           title: "Fields list",
           url: "/fields/list",
+        },
+        {
+          title: "🧪 API Tests",
+          url: "/fields/test",
         }
       ]
     },
