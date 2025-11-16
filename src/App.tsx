@@ -48,8 +48,6 @@ const PaginaCargando = () => (
  */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
-const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
-const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
@@ -143,26 +141,6 @@ export default function App() {
                   element={
                     <AdminCapatazRoute>
                       <ParcelaPage />
-                    </AdminCapatazRoute>
-                  } 
-                />
-              </Route>
-
-              {/* Rutas de Actividades - Solo Admin/Capataz */}
-              <Route path="activities">
-                <Route 
-                  index 
-                  element={
-                    <AdminCapatazRoute>
-                      <ActivitiesDashboard />
-                    </AdminCapatazRoute>
-                  } 
-                />
-                <Route 
-                  path="list" 
-                  element={
-                    <AdminCapatazRoute>
-                      <ActivitiesListPage />
                     </AdminCapatazRoute>
                   } 
                 />
