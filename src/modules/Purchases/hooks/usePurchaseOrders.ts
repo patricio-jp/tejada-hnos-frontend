@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PurchaseOrder, CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import apiClient from '@/lib/api-client';
 
 /**
  * Normaliza los datos de una orden de compra del backend
@@ -40,20 +39,9 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al cargar las órdenes de compra');
-      }
-
-      const { data } = await response.json();
+      const data = await apiClient.get<PurchaseOrder[]>('/purchase-orders', { token: accessToken });
       // Normalizar cada orden para convertir strings a números
-      const normalizedOrders = data.map((order: Record<string, unknown>) => 
+      const normalizedOrders = (data as unknown as Record<string, unknown>[]).map((order) => 
         normalizePurchaseOrder(order)
       );
       setPurchaseOrders(normalizedOrders);
@@ -72,23 +60,8 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dto),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al crear la orden de compra');
-      }
-
-      const responseData = await response.json();
-      // Backend returns { data: order, message: ... }
-      const rawOrder = responseData.data || responseData;
-      const newOrder = normalizePurchaseOrder(rawOrder);
+      const rawOrder = await apiClient.post<PurchaseOrder>('/purchase-orders', dto, { token: accessToken });
+      const newOrder = normalizePurchaseOrder(rawOrder as unknown as Record<string, unknown>);
       setPurchaseOrders(prev => [...prev, newOrder]);
       return newOrder;
     } catch (err) {
@@ -107,23 +80,8 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dto),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar la orden de compra');
-      }
-
-      const responseData = await response.json();
-      // Backend returns { data: order, message: ... }
-      const rawOrder = responseData.data || responseData;
-      const updatedOrder = normalizePurchaseOrder(rawOrder);
+      const rawOrder = await apiClient.put<PurchaseOrder>(`/purchase-orders/${id}`, dto, { token: accessToken });
+      const updatedOrder = normalizePurchaseOrder(rawOrder as unknown as Record<string, unknown>);
       setPurchaseOrders(prev => prev.map(po => po.id === id ? updatedOrder : po));
       return updatedOrder;
     } catch (err) {
@@ -142,17 +100,7 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar la orden de compra');
-      }
-
+      await apiClient.delete(`/purchase-orders/${id}`, { token: accessToken });
       setPurchaseOrders(prev => prev.filter(po => po.id !== id));
       return true;
     } catch (err) {
@@ -171,19 +119,8 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al cargar la orden de compra');
-      }
-
-      const { data } = await response.json();
-      return normalizePurchaseOrder(data);
+      const data = await apiClient.get<PurchaseOrder>(`/purchase-orders/${id}`, { token: accessToken });
+      return normalizePurchaseOrder(data as unknown as Record<string, unknown>);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
       console.error('Error fetching purchase order:', err);
@@ -204,21 +141,12 @@ export function usePurchaseOrders() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/purchase-orders/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status, details }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar el estado de la orden');
-      }
-
-      const responseData = await response.json();
-      const updatedOrder = normalizePurchaseOrder(responseData.data || responseData);
+      const responseData = await apiClient.patch<PurchaseOrder>(
+        `/purchase-orders/${id}/status`, 
+        { status, details }, 
+        { token: accessToken }
+      );
+      const updatedOrder = normalizePurchaseOrder(responseData as unknown as Record<string, unknown>);
       setPurchaseOrders(prev => prev.map(po => po.id === id ? updatedOrder : po));
       return updatedOrder;
     } catch (err) {

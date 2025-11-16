@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { WorkOrderStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import apiClient from '@/lib/api-client';
 
 interface UseWorkOrderActionsProps {
   workOrder: {
@@ -124,19 +125,7 @@ export function useWorkOrderActions({ workOrder, onSuccess }: UseWorkOrderAction
     setError(null);
 
     try {
-      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al actualizar el estado de la orden');
-      }
+      await apiClient.put(`/work-orders/${workOrder.id}`, { status: nextStatus }, { token: accessToken });
 
       if (onSuccess) {
         onSuccess();
