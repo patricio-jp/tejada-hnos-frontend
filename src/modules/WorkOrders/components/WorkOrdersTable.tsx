@@ -1,4 +1,5 @@
 import { Eye, Pencil } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -17,7 +18,7 @@ type WorkOrdersTableProps = {
 
 type StatusBadge = {
   label: string;
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning';
   className?: string;
 };
 
@@ -29,6 +30,8 @@ function formatStatus(status: WorkOrder['status']): StatusBadge {
       return { label: 'En progreso', variant: 'default' as const };
     case 'COMPLETED':
       return { label: 'Completada', variant: 'outline' as const, className: 'text-green-600 border-green-100 bg-green-50 dark:border-green-900/40 dark:bg-green-900/20' };
+    case 'UNDER_REVIEW':
+      return { label: 'En revisión', variant: 'warning' as const };
     case 'CANCELLED':
       return { label: 'Cancelada', variant: 'destructive' as const };
     default:
@@ -44,6 +47,16 @@ function formatDate(value: string | undefined | null): string {
 }
 
 export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
+  const navigate = useNavigate();
+
+  const handleViewDetails = (workOrderId: string) => {
+    navigate(`/work-orders/${workOrderId}`);
+  };
+
+  const handleEdit = (workOrderId: string) => {
+    navigate(`/work-orders/edit/${workOrderId}`);
+  };
+
   return (
     <TooltipProvider>
       <Table>
@@ -92,6 +105,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                       <TooltipTrigger asChild>
                         <button
                           type="button"
+                          onClick={() => handleViewDetails(workOrder.id)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
                           aria-label="Ver detalles"
                         >
@@ -104,6 +118,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                       <TooltipTrigger asChild>
                         <button
                           type="button"
+                          onClick={() => handleEdit(workOrder.id)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
                           aria-label="Editar"
                         >

@@ -101,6 +101,34 @@ export default function App() {
               
               {/* Rutas de WorkOrders - Accesible para todos los roles autenticados */}
               <Route path="work-orders">
+                {/* Índice de work-orders - Admin/Capataz */}
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrdersPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Nueva orden de trabajo */}
+                <Route 
+                  path="new" 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Editar orden de trabajo */}
+                <Route 
+                  path="edit/:id" 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Tareas del operario */}
                 <Route 
                   path="my-tasks" 
                   element={
@@ -109,6 +137,7 @@ export default function App() {
                     </OperarioRoute>
                   } 
                 />
+                {/* Detalle de orden de trabajo */}
                 <Route 
                   path=":id" 
                   element={<WorkOrderDetailPage />} 
@@ -171,22 +200,7 @@ export default function App() {
                   </AdminCapatazRoute>
                 } 
               />
-              <Route 
-                path="work-orders" 
-                element={
-                  <AdminCapatazRoute>
-                    <WorkOrdersPage />
-                  </AdminCapatazRoute>
-                } 
-              />
-              <Route 
-                path="work-orders/new" 
-                element={
-                  <AdminCapatazRoute>
-                    <WorkOrderFormPage />
-                  </AdminCapatazRoute>
-                } 
-              />
+              
               {/* Rutas de Órdenes de Compra - Admin/Capataz para crear/editar, solo Admin para aprobar/cerrar */}
               <Route path="purchases">
                 <Route 

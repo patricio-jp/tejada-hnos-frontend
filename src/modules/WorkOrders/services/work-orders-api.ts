@@ -1,4 +1,4 @@
-import type { WorkOrder, CreateActivityDTO, Activity, Input } from '@/types';
+import type { WorkOrder, CreateActivityDTO, Activity, Input, UpdateWorkOrderDTO } from '@/types';
 import apiClient from '@/lib/api-client';
 
 export const workOrdersApi = {
@@ -17,9 +17,16 @@ export const workOrdersApi = {
   },
 
   /**
+   * Actualizar una orden de trabajo existente
+   */
+  async updateWorkOrder(id: string, data: UpdateWorkOrderDTO, token: string): Promise<WorkOrder> {
+    return apiClient.put<WorkOrder>(`/work-orders/${id}`, data, { token });
+  },
+
+  /**
    * Crear una nueva actividad en una orden de trabajo
    */
-  async createActivity(workOrderId: string, activityData: Omit<CreateActivityDTO, 'workOrderId'>, token: string): Promise<Activity> {
+  async createActivity(workOrderId: string, activityData: CreateActivityDTO, token: string): Promise<Activity> {
     return apiClient.post<Activity>(`/work-orders/${workOrderId}/activities`, activityData, { token });
   },
 

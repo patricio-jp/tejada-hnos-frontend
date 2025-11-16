@@ -190,7 +190,7 @@ export default function WorkOrderDetailPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate("/work-orders/my-tasks")}
+            onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

@@ -1,40 +1,105 @@
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { WorkOrderForm } from '../components/WorkOrderForm';
 import { useWorkOrders } from '../hooks/useWorkOrders';
-import type { CreateWorkOrderDTO } from '@/types';
+import { workOrderApi } from '../utils/api';
+import type { CreateWorkOrderDTO, WorkOrder } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function WorkOrderFormPage() {
   const navigate = useNavigate();
-  const { createWorkOrder, createWorkOrderStatus } = useWorkOrders();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
+
+  const { createWorkOrder, updateWorkOrder, createWorkOrderStatus } = useWorkOrders();
+  const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null);
+  const [loading, setLoading] = useState(isEditMode);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      setLoading(true);
+      workOrderApi
+        .getById(id)
+        .then((data) => {
+          setWorkOrder(data);
+          setLoadError(null);
+        })
+        .catch((error) => {
+          setLoadError(error instanceof Error ? error.message : 'Error al cargar la orden');
+          toast.error('Error al cargar la orden de trabajo');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [id, isEditMode]);
 
   const handleSubmit = useCallback(
     async (formData: CreateWorkOrderDTO) => {
       try {
-        await createWorkOrder(formData);
-        toast.success('Orden de trabajo creada', {
-          description: 'La nueva orden se registró correctamente.',
-        });
+        if (isEditMode && id) {
+          await updateWorkOrder(id, formData);
+          toast.success('Orden de trabajo actualizada', {
+            description: 'Los cambios se guardaron correctamente.',
+          });
+        } else {
+          await createWorkOrder(formData);
+          toast.success('Orden de trabajo creada', {
+            description: 'La nueva orden se registró correctamente.',
+          });
+        }
         navigate('/work-orders');
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'No se pudo crear la orden de trabajo';
-        toast.error('Error al crear la orden de trabajo', {
+        const message =
+          error instanceof Error
+            ? error.message
+            : `No se pudo ${isEditMode ? 'actualizar' : 'crear'} la orden de trabajo`;
+        toast.error(`Error al ${isEditMode ? 'actualizar' : 'crear'} la orden de trabajo`, {
           description: message,
         });
         throw error instanceof Error ? error : new Error(message);
       }
     },
-    [createWorkOrder, navigate],
+    [createWorkOrder, updateWorkOrder, navigate, isEditMode, id],
   );
+
+  if (loading) {
+    return (
+      <div className="container mx-auto max-w-3xl p-6 space-y-6">
+        <Skeleton className="h-12 w-2/3" />
+        <Skeleton className="h-4 w-1/2" />
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="container mx-auto max-w-3xl p-6">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {loadError}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-3xl p-6 space-y-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Nueva Orden de Trabajo</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isEditMode ? 'Editar Orden de Trabajo' : 'Nueva Orden de Trabajo'}
+        </h1>
         <p className="text-muted-foreground">
-          Completa los datos para registrar una nueva orden de trabajo.
+          {isEditMode
+            ? 'Modifica los datos de la orden de trabajo.'
+            : 'Completa los datos para registrar una nueva orden de trabajo.'}
         </p>
       </div>
 
@@ -42,11 +107,11 @@ export function WorkOrderFormPage() {
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {createWorkOrderStatus.error instanceof Error
             ? createWorkOrderStatus.error.message
-            : 'Ocurrió un error al crear la orden de trabajo.'}
+            : 'Ocurrió un error al procesar la orden de trabajo.'}
         </div>
       )}
 
-      <WorkOrderForm onSubmit={handleSubmit} />
+      <WorkOrderForm initialData={workOrder || undefined} onSubmit={handleSubmit} />
     </div>
   );
 }
