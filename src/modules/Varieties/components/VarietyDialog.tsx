@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { VarietyForm } from './VarietyForm';
-import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '../types/variety';
+import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '@/types';
 
 interface VarietyDialogProps {
   open: boolean;

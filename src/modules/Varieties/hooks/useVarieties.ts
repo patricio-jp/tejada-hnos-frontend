@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { varietyApi } from '../utils/variety-api';
-import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '../types/variety';
+import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '@/types';
 
 export function useVarieties() {
   const [varieties, setVarieties] = useState<Variety[]>([]);

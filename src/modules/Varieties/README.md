@@ -14,8 +14,6 @@ Varieties/
 │   └── useVarieties.ts       # Hook personalizado para operaciones CRUD
 ├── pages/
 │   └── VarietiesPage.tsx     # Página principal del módulo
-├── types/
-│   └── variety.ts            # Tipos TypeScript
 └── utils/
     └── variety-api.ts        # Funciones para llamadas a la API
 ```
