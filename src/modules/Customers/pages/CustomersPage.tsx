@@ -9,7 +9,7 @@ import type {
   Customer, 
   CreateCustomerDto, 
   UpdateCustomerDto 
-} from '../types/customer';
+} from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,

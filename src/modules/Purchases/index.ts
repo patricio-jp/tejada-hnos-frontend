@@ -1,8 +1,5 @@
 // src/modules/Purchases/index.ts
 
-// Exportar tipos
-export * from './types';
-
 // Exportar hooks
 export { usePurchaseOrders } from './hooks/usePurchaseOrders';
 export { useSuppliers } from './hooks/useSuppliers';

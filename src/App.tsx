@@ -48,8 +48,6 @@ const PaginaCargando = () => (
  */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
-const ActivitiesDashboard = React.lazy(() => import('./modules/Activities/pages/ActivitiesDashboard'));
-const ActivitiesListPage = React.lazy(() => import('./modules/Activities/pages/ActivitiesListPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
@@ -64,6 +62,7 @@ const VarietiesPage = React.lazy(() => import('./modules/Varieties/pages/Varieti
 const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksPage'))
 const WorkOrdersPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrdersPage'))
 const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderFormPage'))
+const WorkOrderDetailPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderDetailPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -100,6 +99,51 @@ export default function App() {
                 } 
               />
               
+              {/* Rutas de WorkOrders - Accesible para todos los roles autenticados */}
+              <Route path="work-orders">
+                {/* Índice de work-orders - Admin/Capataz */}
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrdersPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Nueva orden de trabajo */}
+                <Route 
+                  path="new" 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Editar orden de trabajo */}
+                <Route 
+                  path="edit/:id" 
+                  element={
+                    <AdminCapatazRoute>
+                      <WorkOrderFormPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Tareas del operario */}
+                <Route 
+                  path="my-tasks" 
+                  element={
+                    <OperarioRoute>
+                      <MyTasksPage />
+                    </OperarioRoute>
+                  } 
+                />
+                {/* Detalle de orden de trabajo */}
+                <Route 
+                  path=":id" 
+                  element={<WorkOrderDetailPage />} 
+                />
+              </Route>
+              
               <Route path="about" element={<About />} />
               <Route path="protected" element={<Protected />}/>
               {/* Ruta para la lista de campos - Solo Admin/Capataz */}
@@ -131,26 +175,6 @@ export default function App() {
                 />
               </Route>
 
-              {/* Rutas de Actividades - Solo Admin/Capataz */}
-              <Route path="activities">
-                <Route 
-                  index 
-                  element={
-                    <AdminCapatazRoute>
-                      <ActivitiesDashboard />
-                    </AdminCapatazRoute>
-                  } 
-                />
-                <Route 
-                  path="list" 
-                  element={
-                    <AdminCapatazRoute>
-                      <ActivitiesListPage />
-                    </AdminCapatazRoute>
-                  } 
-                />
-              </Route>
-
               {/* Rutas de Catálogos - Solo Admin/Capataz */}
               <Route 
                 path="suppliers" 
@@ -176,22 +200,7 @@ export default function App() {
                   </AdminCapatazRoute>
                 } 
               />
-              <Route 
-                path="work-orders" 
-                element={
-                  <AdminCapatazRoute>
-                    <WorkOrdersPage />
-                  </AdminCapatazRoute>
-                } 
-              />
-              <Route 
-                path="work-orders/new" 
-                element={
-                  <AdminCapatazRoute>
-                    <WorkOrderFormPage />
-                  </AdminCapatazRoute>
-                } 
-              />
+              
               {/* Rutas de Órdenes de Compra - Admin/Capataz para crear/editar, solo Admin para aprobar/cerrar */}
               <Route path="purchases">
                 <Route 

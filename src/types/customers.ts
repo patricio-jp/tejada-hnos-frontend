@@ -1,3 +1,7 @@
+/**
+ * Tipos e interfaces para el módulo de Customers
+ */
+
 export interface Customer {
   id: string;
   name: string;

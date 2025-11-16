@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, ClipboardList, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -28,6 +28,11 @@ export const MENUS_MAIN: MenuItem[] = [
       icon: Home,
     },
     {
+      title: "Mis Tareas",
+      url: "/work-orders/my-tasks",
+      icon: ClipboardList,
+    },
+    {
       title: "Fields and Plots",
       url: "/fields",
       icon: Map,
@@ -41,21 +46,6 @@ export const MENUS_MAIN: MenuItem[] = [
           url: "/fields/list",
         }
       ]
-    },
-    {
-      title: "Activities",
-      url: "/activities",
-      icon: ListChecks,
-      items: [
-        {
-          title: "Dashboard",
-          url: "/activities",
-        },
-        {
-          title: "List",
-          url: "/activities/list",
-        },
-      ],
     },
     {
       title: "Catálogos",

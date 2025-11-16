@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import type { Customer } from '../types/customer';
+import type { Customer } from '@/types';
 import { 
   Pencil, 
   Trash2, 

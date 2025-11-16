@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { PurchaseOrder, CreateGoodReceiptDto } from "../types";
+import type { PurchaseOrder, CreateGoodReceiptDto } from "@/types";
 import { useGoodsReceipts } from "../hooks/useGoodsReceipts";
 
 interface GoodReceiptDialogProps {
@@ -48,12 +48,12 @@ export function GoodReceiptDialog({
       // Inicializar los items con los detalles de la orden
       const receiptItems: ReceiptItem[] = purchaseOrder.details.map((detail) => ({
         purchaseOrderDetailId: detail.id!,
-        inputId: detail.inputId,
-        inputName: detail.input?.name || `Insumo ID: ${detail.inputId}`,
+        inputId: detail.input.id,
+        inputName: detail.input.name,
         quantityOrdered: detail.quantity,
         quantityReceived: detail.quantityReceived || 0,
         quantityToReceive: detail.quantity - (detail.quantityReceived || 0),
-        unit: detail.input?.unit || "und",
+        unit: detail.input.unit,
       }));
       setItems(receiptItems);
       

@@ -4,7 +4,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import { VarietiesTable } from '../components/VarietiesTable';
 import { VarietyDialog } from '../components/VarietyDialog';
 import { useVarieties } from '../hooks/useVarieties';
-import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '../types/variety';
+import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,

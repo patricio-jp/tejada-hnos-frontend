@@ -7,15 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import plotApi from '../utils/plot-api';
-import { userApi, type User } from '../utils/user-api';
-import type { CreateWorkOrderInput } from '../types';
+import { userApi } from '../utils/user-api';
+import type { CreateWorkOrderDTO, WorkOrder, User } from '@/types';
 
 type WorkOrderFormProps = {
+  initialData?: WorkOrder;
   onSubmit?: (payload: WorkOrderFormData) => Promise<void> | void;
   onCancel?: () => void;
 };
 
-export type WorkOrderFormData = CreateWorkOrderInput & {
+export type WorkOrderFormData = CreateWorkOrderDTO & {
   assignedToId?: string;
 };
 
@@ -99,16 +100,23 @@ function normalizePlots(rawPlots: unknown[]): PlotOption[] {
     .filter((item): item is PlotOption => item !== null);
 }
 
-export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
+export function WorkOrderForm({ initialData, onSubmit, onCancel }: WorkOrderFormProps) {
   const navigate = useNavigate();
   const auth = useAuth();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
-  const [assignedToId, setAssignedToId] = useState<string>('');
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [scheduledDate, setScheduledDate] = useState(
+    initialData?.scheduledDate ? new Date(initialData.scheduledDate).toISOString().split('T')[0] : ''
+  );
+  const [dueDate, setDueDate] = useState(
+    initialData?.dueDate ? new Date(initialData.dueDate).toISOString().split('T')[0] : ''
+  );
+  // Ensure plot ids are strings so they match the normalized plot ids coming from `plotApi`
+  const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>(
+    (initialData?.plots?.map((p) => String((p as any).id)) ?? []) as string[]
+  );
+  const [assignedToId, setAssignedToId] = useState<string>(initialData?.assignedToId || '');
 
   const [plots, setPlots] = useState<PlotOption[]>([]);
   const [loadingPlots, setLoadingPlots] = useState(true);
@@ -191,10 +199,27 @@ export function WorkOrderForm({ onSubmit, onCancel }: WorkOrderFormProps) {
     return users.filter((user) => user.role === 'CAPATAZ' || user.role === 'OPERARIO');
   }, [users]);
 
+  // Preserve initial plot selections in edit mode, but ensure they exist in loaded plots
   useEffect(() => {
+    if (accessiblePlots.length === 0) return;
+
     const visibleIds = new Set(accessiblePlots.map((plot) => plot.id));
-    setSelectedPlotIds((prev) => prev.filter((id) => visibleIds.has(id)));
-  }, [accessiblePlots]);
+    
+    // In edit mode with initialData, preserve the initial selections even if they're not in accessiblePlots
+    // This handles cases where backend filtering might limit visible plots but we still want to show what's assigned
+    if (initialData?.plots && initialData.plots.length > 0) {
+      const initialIds = initialData.plots.map((p) => String((p as any).id));
+
+      // Keep all initial IDs that exist in visible plots
+      setSelectedPlotIds((prev) => {
+        const preserved = initialIds.filter((id) => visibleIds.has(id));
+        return preserved.length > 0 ? preserved : prev;
+      });
+    } else {
+      // In create mode or when plots change, filter normally
+      setSelectedPlotIds((prev) => prev.filter((id) => visibleIds.has(id)));
+    }
+  }, [accessiblePlots, initialData]);
 
   const togglePlotSelection = (plotId: string) => {
     setSelectedPlotIds((prev) => {

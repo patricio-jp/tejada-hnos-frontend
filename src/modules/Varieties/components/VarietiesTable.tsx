@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import type { Variety } from '../types/variety';
+import type { Variety } from '@/types';
 import { Pencil, Trash2 } from 'lucide-react';
 
 interface VarietiesTableProps {

@@ -1,3 +1,7 @@
+/**
+ * Tipos e interfaces para el módulo de Varieties
+ */
+
 export interface Variety {
   id: string;
   name: string;

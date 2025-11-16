@@ -1,4 +1,5 @@
 import { Eye, Pencil } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -9,7 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { WorkOrder } from '../types';
+import type { WorkOrder } from '@/types';
+import { canEditWorkOrder } from '../utils/work-order-permissions';
 
 type WorkOrdersTableProps = {
   workOrders: WorkOrder[];
@@ -17,7 +19,7 @@ type WorkOrdersTableProps = {
 
 type StatusBadge = {
   label: string;
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning';
   className?: string;
 };
 
@@ -29,6 +31,8 @@ function formatStatus(status: WorkOrder['status']): StatusBadge {
       return { label: 'En progreso', variant: 'default' as const };
     case 'COMPLETED':
       return { label: 'Completada', variant: 'outline' as const, className: 'text-green-600 border-green-100 bg-green-50 dark:border-green-900/40 dark:bg-green-900/20' };
+    case 'UNDER_REVIEW':
+      return { label: 'En revisión', variant: 'warning' as const };
     case 'CANCELLED':
       return { label: 'Cancelada', variant: 'destructive' as const };
     default:
@@ -44,6 +48,16 @@ function formatDate(value: string | undefined | null): string {
 }
 
 export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
+  const navigate = useNavigate();
+
+  const handleViewDetails = (workOrderId: string) => {
+    navigate(`/work-orders/${workOrderId}`);
+  };
+
+  const handleEdit = (workOrderId: string) => {
+    navigate(`/work-orders/edit/${workOrderId}`);
+  };
+
   return (
     <TooltipProvider>
       <Table>
@@ -72,6 +86,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
             const status = formatStatus(workOrder.status);
             const firstPlotName = firstPlot?.name ?? firstPlot?.id ?? 'Sin parcela';
             const fieldName = firstPlot?.field?.name ?? firstPlot?.fieldName ?? 'Sin campo';
+            const isEditable = canEditWorkOrder(workOrder);
 
             return (
               <TableRow key={workOrder.id}>
@@ -92,6 +107,7 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                       <TooltipTrigger asChild>
                         <button
                           type="button"
+                          onClick={() => handleViewDetails(workOrder.id)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
                           aria-label="Ver detalles"
                         >
@@ -100,18 +116,21 @@ export function WorkOrdersTable({ workOrders }: WorkOrdersTableProps) {
                       </TooltipTrigger>
                       <TooltipContent>Ver detalles</TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                          aria-label="Editar"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Editar</TooltipContent>
-                    </Tooltip>
+                    {isEditable && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(workOrder.id)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                            aria-label="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

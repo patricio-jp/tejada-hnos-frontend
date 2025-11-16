@@ -29,8 +29,7 @@ import {
   DollarSign,
   Lock
 } from "lucide-react";
-import { PurchaseOrderStatus } from "../types";
-import type { PurchaseOrder } from "../types";
+import { PurchaseOrderStatus, type PurchaseOrder } from "@/types";
 import { StatusBadge } from "../components/StatusBadge";
 import { PurchaseOrderDetailsSheet } from "../components/PurchaseOrderDetailsSheet";
 import { formatCurrency } from "@/lib/currency";

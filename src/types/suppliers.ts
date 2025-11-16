@@ -1,3 +1,9 @@
+/**
+ * Tipos e interfaces para el módulo de Suppliers
+ */
+
+import type { PurchaseOrder } from "./purchases";
+
 export interface Supplier {
   id: string;
   name: string;
@@ -12,7 +18,7 @@ export interface Supplier {
   // Campos calculados desde el backend
   totalSupplied?: number;      // Total de purchaseOrders (suma de details)
   totalOrders?: number;         // Cantidad de órdenes de compra
-  purchaseOrders?: any[];       // Relación con órdenes (opcional para el frontend)
+  purchaseOrders?: PurchaseOrder[];       // Relación con órdenes (opcional para el frontend)
 }
 
 export interface CreateSupplierDto {

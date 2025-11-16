@@ -76,7 +76,7 @@ export function isTokenValid(token: string | null) {
 export default function useAuth(options?: UseAuthOptions) {
   const accessKey = options?.accessTokenKey ?? 'access_token'
   const refreshKey = options?.refreshTokenKey ?? 'refresh_token'
-  const refreshUrl = options?.refreshUrl ?? '/auth/refresh-token'
+  const refreshUrl = options?.refreshUrl ?? '/api/auth/refresh-token'
 
   const [tokens, setTokens] = useState<Tokens>(() =>
     readTokens(accessKey, refreshKey),
@@ -182,13 +182,14 @@ export default function useAuth(options?: UseAuthOptions) {
         ;(async () => {
           const refreshed = await refreshAccessToken()
           if (!refreshed) {
-            setTokens((prev) => ({ ...prev, accessToken: null }))
+            // Si el refresh falló, cerrar sesión completamente
+            logout()
           }
         })()
       }
     }, 30_000) // check every 30s
     return () => clearInterval(id)
-  }, [tokens.accessToken, refreshAccessToken])
+  }, [tokens.accessToken, refreshAccessToken, logout])
 
   // On mount, if access token invalid but refresh token exists, try to refresh once
   useEffect(() => {

@@ -1,4 +1,9 @@
-// src/modules/Purchases/types/index.ts
+/**
+ * Tipos e interfaces para el módulo de Purchases
+ */
+
+import type { Input, InputUnit } from './inputs';
+import type { Supplier } from './suppliers';
 
 /**
  * Estados posibles de una orden de compra
@@ -15,67 +20,21 @@ export const PurchaseOrderStatus = {
 export type PurchaseOrderStatus = typeof PurchaseOrderStatus[keyof typeof PurchaseOrderStatus];
 
 /**
- * Unidades de medida para insumos (debe coincidir con backend)
- */
-export const InputUnit = {
-  KG: "KG",
-  LITRO: "LITRO",
-  UNIDAD: "UNIDAD",
-} as const;
-
-export type InputUnit = typeof InputUnit[keyof typeof InputUnit];
-
-/**
- * Etiquetas legibles para las unidades
- */
-export const InputUnitLabels: Record<InputUnit, string> = {
-  [InputUnit.KG]: "Kilogramos",
-  [InputUnit.LITRO]: "Litros",
-  [InputUnit.UNIDAD]: "Unidades",
-};
-
-/**
- * Proveedor (será manejado por otro módulo)
- */
-export interface Supplier {
-  id: string; // UUID v4
-  name: string;
-  taxId?: string;
-  address?: string;
-  contactEmail?: string;
-  phoneNumber?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-/**
- * Insumo (será manejado por otro módulo)
- */
-export interface Input {
-  id: string; // UUID v4
-  name: string;
-  unit: InputUnit; // Unidad de medida (KG, LITRO, UNIDAD)
-  stock?: number;
-  costPerUnit?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-/**
  * Detalle de una orden de compra (item individual)
  * IMPORTANTE: Debe coincidir con backend PurchaseOrderDetail entity
  */
 export interface PurchaseOrderDetail {
   id?: string; // UUID v4
   purchaseOrderId?: string; // UUID v4
-  inputId: string; // UUID v4
-  input?: Input; // Populated cuando se obtiene del servidor
+  input: Input; // Populated cuando se obtiene del servidor
   quantity: number; // Cantidad solicitada
   unitPrice: number; // Precio unitario de compra
+  subtotal?: number; // Calculado por backend (quantity * unitPrice)
   quantityReceived?: number; // Calculado por backend desde receiptDetails
   quantityPending?: number; // Calculado por backend
   isFullyReceived?: boolean; // Calculado por backend
-  receiptDetails?: GoodReceiptDetail[]; // Relación con recepciones
+  percentageReceived?: number; // Calculado por backend
+  receiptHistory?: GoodReceipt[]; // Relación con recepciones
 }
 
 /**
@@ -89,7 +48,6 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   totalAmount: number; // Monto total de la orden (calculado desde details)
   details: PurchaseOrderDetail[];
-  receipts?: GoodReceipt[]; // Relación con recepciones (se llama 'receipts' en backend)
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
@@ -99,28 +57,9 @@ export interface PurchaseOrder {
  * Recepción de mercancía
  */
 export interface GoodReceipt {
-  id?: string; // UUID v4
-  purchaseOrderId: string; // UUID v4
-  purchaseOrder?: PurchaseOrder;
-  receivedDate: string;
-  receivedBy?: string; // UUID v4 del usuario
-  receivedByName?: string; // Nombre del usuario que recibió
-  notes?: string;
-  details?: GoodReceiptDetail[]; // Detalles de lo recibido
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-/**
- * Detalle de recepción de mercancía
- */
-export interface GoodReceiptDetail {
-  id?: string; // UUID v4
-  goodReceiptId?: string; // UUID v4
-  purchaseOrderDetailId: string; // UUID v4
-  inputId: string; // UUID v4
-  input?: Input;
+  receiptId?: string; // UUID v4
   quantityReceived: number;
+  receivedAt?: string;
   notes?: string;
 }
 
@@ -130,12 +69,10 @@ export interface GoodReceiptDetail {
  */
 export interface CreatePurchaseOrderDto {
   supplierId: string; // UUID v4
-  status: string; // Estado inicial (generalmente 'PENDIENTE')
-  totalAmount: number; // Monto total calculado
   details: {
     inputId: string; // UUID v4
     quantity: number; // Cantidad solicitada
-    unitPrice: number; // Precio unitario
+    unitPrice?: number; // Precio unitario
   }[];
 }
 
@@ -145,11 +82,22 @@ export interface CreatePurchaseOrderDto {
  */
 export interface UpdatePurchaseOrderDto {
   supplierId?: string; // UUID v4
-  status?: string;
-  totalAmount?: number;
   details?: {
-    id: string; // UUID v4
-    quantity: number;
+    id?: string; // UUID v4
+    inputId?: string; // UUID v4
+    quantity?: number;
+    unitPrice?: number;
+  }[];
+}
+
+/**
+ * DTO para actualizar el estado de una orden de compra
+ * Opcional: Actualizar precio unitario de los detalles
+ */
+export interface UpdatePurchaseOrderStatusDto {
+  status: PurchaseOrderStatus;
+  details?: {
+    detailId: string; // UUID v4
     unitPrice: number;
   }[];
 }
@@ -159,12 +107,14 @@ export interface UpdatePurchaseOrderDto {
  */
 export interface CreateGoodReceiptDto {
   purchaseOrderId: string; // UUID v4
-  receivedDate: string;
+  receivedDate?: string;
   notes?: string;
   details: {
     purchaseOrderDetailId: string; // UUID v4
-    inputId: string; // UUID v4
     quantityReceived: number;
     notes?: string;
   }[];
 }
+
+// Re-exportar InputUnit para compatibilidad
+export type { InputUnit };

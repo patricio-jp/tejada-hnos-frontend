@@ -1,11 +1,5 @@
 import apiClient from '@/lib/api-client';
-
-export type User = {
-  id: string;
-  name: string;
-  lastName: string;
-  role: string;
-};
+import type { User } from '@/types';
 
 async function getAllUsers(accessToken: string): Promise<User[]> {
   const response = await apiClient.get<User[]>('/users', {

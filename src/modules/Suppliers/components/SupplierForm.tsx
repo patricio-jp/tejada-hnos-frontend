@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Supplier } from '../types/supplier';
+import type { Supplier } from '@/types';
 
 interface SupplierFormProps {
   supplier?: Supplier;

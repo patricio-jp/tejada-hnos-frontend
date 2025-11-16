@@ -8,7 +8,7 @@ import { PurchaseOrderDetailsSheet } from "../components/PurchaseOrderDetailsShe
 import { GoodReceiptDialog } from "../components/GoodReceiptDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
-import type { PurchaseOrder } from "../types";
+import type { PurchaseOrder } from "@/types";
 import {
   AlertDialog,
   AlertDialogAction,

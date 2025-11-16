@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { workOrderApi } from '../utils/api';
-import type { CreateWorkOrderInput, WorkOrder } from '../types';
+import type { CreateWorkOrderDTO, UpdateWorkOrderDTO, WorkOrder } from '@/types';
 
 type WorkOrdersState = {
   workOrders: WorkOrder[];
@@ -40,7 +40,7 @@ export function useWorkOrders() {
   }, []);
 
   const createWorkOrder = useCallback(
-    async (payload: CreateWorkOrderInput) => {
+    async (payload: CreateWorkOrderDTO) => {
       setCreateStatus({ loading: true, error: null });
       try {
         const created = await workOrderApi.create(payload);
@@ -60,6 +60,27 @@ export function useWorkOrders() {
     [],
   );
 
+  const updateWorkOrder = useCallback(
+    async (id: string, payload: UpdateWorkOrderDTO) => {
+      setCreateStatus({ loading: true, error: null });
+      try {
+        const updated = await workOrderApi.update(id, payload);
+        setState((prev) => ({
+          ...prev,
+          workOrders: prev.workOrders.map((wo) => (wo.id === id ? updated : wo)),
+        }));
+        setCreateStatus({ loading: false, error: null });
+        return updated;
+      } catch (error) {
+        const normalizedError =
+          error instanceof Error ? error : new Error('No se pudo actualizar la orden de trabajo');
+        setCreateStatus({ loading: false, error: normalizedError });
+        throw normalizedError;
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     void fetchWorkOrders();
   }, [fetchWorkOrders]);
@@ -70,6 +91,7 @@ export function useWorkOrders() {
     error: state.error,
     refetch: fetchWorkOrders,
     createWorkOrder,
+    updateWorkOrder,
     createWorkOrderStatus: createStatus,
   };
 }
