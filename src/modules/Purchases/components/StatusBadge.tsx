@@ -1,7 +1,7 @@
 // src/modules/Purchases/components/StatusBadge.tsx
 
 import { Badge } from "@/components/ui/badge";
-import { PurchaseOrderStatus } from "../types";
+import { PurchaseOrderStatus } from "@/types";
 
 interface StatusBadgeProps {
   status: PurchaseOrderStatus;

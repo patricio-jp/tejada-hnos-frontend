@@ -7,8 +7,6 @@ Este módulo gestiona las órdenes de compra a proveedores y la recepción de me
 
 ```
 src/modules/Purchases/
-├── types/
-│   └── index.ts              # Tipos e interfaces TypeScript
 ├── hooks/
 │   ├── usePurchaseOrders.ts  # Hook para CRUD de órdenes
 │   ├── useSuppliers.ts       # Hook para obtener proveedores

@@ -1,7 +1,7 @@
 // src/modules/Purchases/hooks/useSuppliers.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Supplier } from '../types';
+import type { Supplier } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';

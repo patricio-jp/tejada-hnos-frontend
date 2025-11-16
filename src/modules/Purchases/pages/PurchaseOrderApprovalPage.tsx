@@ -33,8 +33,7 @@ import {
   Building2,
   DollarSign
 } from "lucide-react";
-import { PurchaseOrderStatus } from "../types";
-import type { PurchaseOrder } from "../types";
+import { PurchaseOrderStatus, type PurchaseOrder } from "@/types";
 import { StatusBadge } from "../components/StatusBadge";
 import { PurchaseOrderDetailsSheet } from "../components/PurchaseOrderDetailsSheet";
 import { formatCurrency } from "@/lib/currency";
@@ -129,16 +128,9 @@ export default function PurchaseOrderApprovalPage() {
   const handleSaveEdit = async () => {
     if (!selectedOrder) return;
 
-    // Calcular nuevo total desde editedDetails
-    const newTotalAmount = editedDetails.reduce((sum, detail) => {
-      return sum + (detail.quantity * detail.unitPrice);
-    }, 0);
-
     // Actualizar orden con nuevos precios usando editedDetails directamente
     const result = await updatePurchaseOrder(selectedOrder.id!, {
       supplierId: selectedOrder.supplierId,
-      status: PurchaseOrderStatus.PENDIENTE,
-      totalAmount: newTotalAmount,
       details: editedDetails.map((detail) => ({
         id: detail.id,
         quantity: detail.quantity,
@@ -468,10 +460,10 @@ export default function PurchaseOrderApprovalPage() {
                     <div className="space-y-3">
                       <div>
                         <p className="font-medium">
-                          {detail.input?.name || `Input ID: ${detail.inputId.substring(0, 8)}...`}
+                          {detail.input.name}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Cantidad: {detail.quantity} {detail.input?.unit || 'und'}
+                          Cantidad: {detail.quantity} {detail.input.unit}
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">

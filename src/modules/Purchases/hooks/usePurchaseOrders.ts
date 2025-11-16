@@ -1,7 +1,7 @@
 // src/modules/Purchases/hooks/usePurchaseOrders.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import type { PurchaseOrder, CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from '../types';
+import type { PurchaseOrder, CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';

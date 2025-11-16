@@ -1,7 +1,7 @@
 // src/modules/Purchases/hooks/useGoodsReceipts.ts
 
 import { useState, useCallback } from 'react';
-import type { GoodReceipt, CreateGoodReceiptDto } from '../types';
+import type { GoodReceipt, CreateGoodReceiptDto } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';

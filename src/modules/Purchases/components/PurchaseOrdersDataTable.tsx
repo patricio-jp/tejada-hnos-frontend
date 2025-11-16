@@ -26,8 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "./StatusBadge";
-import type { PurchaseOrder } from "../types";
-import { PurchaseOrderStatus } from "../types";
+import { PurchaseOrderStatus, type PurchaseOrder } from "@/types";
 import {
   Eye,
   Edit,

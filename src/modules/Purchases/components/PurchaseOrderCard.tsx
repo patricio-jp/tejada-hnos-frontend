@@ -3,9 +3,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
-import type { PurchaseOrder } from "../types";
+import { PurchaseOrderStatus, type PurchaseOrder } from "@/types";
 import { Eye, Edit, Trash2, PackageCheck } from "lucide-react";
-import { PurchaseOrderStatus } from "../types";
 
 interface PurchaseOrderCardProps {
   purchaseOrder: PurchaseOrder;

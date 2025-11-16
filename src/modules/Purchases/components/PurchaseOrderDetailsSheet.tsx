@@ -19,18 +19,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "./StatusBadge";
-import type { PurchaseOrder } from "../types";
+import { PurchaseOrderStatus, type PurchaseOrder } from "@/types";
 import {
   Edit, 
   Trash2, 
   PackageCheck, 
   Calendar, 
-  User, 
   Building2,
   Package,
   Clock
 } from "lucide-react";
-import { PurchaseOrderStatus } from "../types";
 import { formatCurrency } from "@/lib/currency";
 
 interface PurchaseOrderDetailsSheetProps {
@@ -247,13 +245,11 @@ export function PurchaseOrderDetailsSheet({
                           <TableCell>
                             <div>
                               <p className="font-medium">
-                                {detail.input?.name || `ID: ${detail.inputId.substring(0, 8)}...`}
+                                {detail.input.name}
                               </p>
-                              {detail.input?.unit && (
-                                <p className="text-xs text-muted-foreground">
-                                  Unidad: {detail.input.unit}
-                                </p>
-                              )}
+                              <p className="text-xs text-muted-foreground">
+                                Unidad: {detail.input.unit}
+                              </p>
                               <p className="text-xs text-muted-foreground mt-1">
                                 Precio: {formatCurrency(unitPrice)}
                               </p>
@@ -262,26 +258,26 @@ export function PurchaseOrderDetailsSheet({
                           <TableCell className="text-right">
                             <div>
                               <p className="font-medium">
-                                {detail.quantity} {detail.input?.unit || "und"}
+                                {detail.quantity} {detail.input.unit}
                               </p>
-                                <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 {formatCurrency(quantity * unitPrice)}
                               </p>
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <span className={quantityReceived > 0 ? "text-green-600 font-medium" : "text-muted-foreground"}>
-                              {quantityReceived} {detail.input?.unit || "und"}
+                              {quantityReceived} {detail.input.unit}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
                             {isComplete ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/50">
                                 ✓ Completo
                               </Badge>
                             ) : (
-                              <span className="font-medium text-orange-600">
-                                {pending} {detail.input?.unit || "und"}
+                              <span className="font-medium text-orange-600 dark:text-orange-400">
+                                {pending} {detail.input.unit}
                               </span>
                             )}
                           </TableCell>
@@ -299,44 +295,42 @@ export function PurchaseOrderDetailsSheet({
           </div>
 
           {/* Historial de recepciones */}
-          {purchaseOrder.receipts && purchaseOrder.receipts.length > 0 && (
+          {purchaseOrder.details.some(detail => detail.receiptHistory && detail.receiptHistory.length > 0) && (
             <>
               <Separator />
               <div>
                 <h3 className="text-sm font-semibold mb-3">📦 Historial de recepciones</h3>
                 <div className="space-y-2">
-                  {purchaseOrder.receipts.map((receipt, index) => (
-                    <div 
-                      key={receipt.id || index} 
-                      className="p-3 border-l-4 border-green-500 bg-green-50/50 rounded-r-lg"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-sm font-medium">
-                            Recepción #{index + 1}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(receipt.receivedDate).toLocaleDateString('es-ES', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
-                          </p>
+                  {purchaseOrder.details.flatMap(detail => 
+                    detail.receiptHistory?.map((receipt, index) => (
+                      <div 
+                        key={receipt.receiptId || index} 
+                        className="p-3 border-l-4 border-green-500 bg-green-50/50 dark:bg-green-950/30 rounded-r-lg"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-medium">
+                              {detail.input.name} - {receipt.quantityReceived} {detail.input.unit}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {receipt.receivedAt 
+                                ? new Date(receipt.receivedAt).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })
+                                : 'Fecha no disponible'}
+                            </p>
+                          </div>
                         </div>
-                        {receipt.receivedByName && (
-                          <Badge variant="outline" className="text-xs">
-                            <User className="h-3 w-3 mr-1" />
-                            {receipt.receivedByName}
-                          </Badge>
+                        {receipt.notes && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            💬 {receipt.notes}
+                          </p>
                         )}
                       </div>
-                      {receipt.notes && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          💬 {receipt.notes}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    )) || []
+                  )}
                 </div>
               </div>
             </>
