@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { workOrderApi } from '../utils/api';
-import type { CreateWorkOrderInput, WorkOrder } from '../types';
+import type { CreateWorkOrderDTO, WorkOrder } from '@/types';
 
 type WorkOrdersState = {
   workOrders: WorkOrder[];
@@ -40,7 +40,7 @@ export function useWorkOrders() {
   }, []);
 
   const createWorkOrder = useCallback(
-    async (payload: CreateWorkOrderInput) => {
+    async (payload: CreateWorkOrderDTO) => {
       setCreateStatus({ loading: true, error: null });
       try {
         const created = await workOrderApi.create(payload);

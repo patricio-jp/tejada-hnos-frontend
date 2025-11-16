@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { ActivityStatus } from "@/modules/WorkOrders/types/work-orders";
+import type { ActivityStatus } from "@/types";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 
 interface ActivityStatusBadgeProps {

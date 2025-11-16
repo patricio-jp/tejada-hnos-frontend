@@ -2,7 +2,7 @@
  * API cliente para Work Orders
  */
 
-import type { WorkOrder, CreateActivityDto, Activity, Input } from '@/modules/WorkOrders/types/work-orders';
+import type { WorkOrder, CreateActivityDTO, Activity, Input } from '@/types';
 
 const API_BASE_URL = '/api';
 
@@ -46,7 +46,7 @@ export const workOrdersApi = {
   /**
    * Crear una nueva actividad en una work order
    */
-  async createActivity(workOrderId: string, data: Omit<CreateActivityDto, 'workOrderId'>): Promise<Activity> {
+  async createActivity(workOrderId: string, data: Omit<CreateActivityDTO, 'workOrderId'>): Promise<Activity> {
     const response = await fetchWithAuth(`/work-orders/${workOrderId}/activities`, {
       method: 'POST',
       body: JSON.stringify(data),

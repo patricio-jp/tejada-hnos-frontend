@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { WorkOrder } from '@/modules/WorkOrders/types/work-orders';
+import type { WorkOrder } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { workOrdersApi } from '../services/work-orders-api';
 

@@ -1,4 +1,4 @@
-import type { WorkOrder, CreateActivityDto, Activity, Input } from '@/modules/WorkOrders/types/work-orders';
+import type { WorkOrder, CreateActivityDTO, Activity, Input } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -44,7 +44,7 @@ export const workOrdersApi = {
   /**
    * Crear una nueva actividad en una orden de trabajo
    */
-  async createActivity(workOrderId: string, activityData: CreateActivityDto, token: string): Promise<Activity> {
+  async createActivity(workOrderId: string, activityData: CreateActivityDTO, token: string): Promise<Activity> {
     const response = await fetch(`${API_BASE_URL}/work-orders/${workOrderId}/activities`, {
       method: 'POST',
       headers: {

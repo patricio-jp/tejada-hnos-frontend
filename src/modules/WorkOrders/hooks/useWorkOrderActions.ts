@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WorkOrderStatus } from '../types/work-orders';
+import { WorkOrderStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
 interface UseWorkOrderActionsProps {

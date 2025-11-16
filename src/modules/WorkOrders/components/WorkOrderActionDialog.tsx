@@ -9,18 +9,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { WorkOrderStatus } from '../types/work-orders';
+import type { WorkOrder } from '@/types';
 
 interface WorkOrderActionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   action: {
     label: string;
-    nextStatus: WorkOrderStatus;
+    nextStatus: WorkOrder['status'];
     description: string;
     variant?: 'default' | 'destructive' | 'outline' | 'secondary';
   };
-  onConfirm: (nextStatus: WorkOrderStatus) => Promise<void>;
+  onConfirm: (nextStatus: WorkOrder['status']) => Promise<void>;
   loading?: boolean;
   error?: string | null;
 }

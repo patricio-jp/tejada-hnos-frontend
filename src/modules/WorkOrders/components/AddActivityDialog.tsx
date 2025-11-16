@@ -7,7 +7,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
-import type { CreateActivityDto, ActivityType, Input as InputType } from "@/modules/WorkOrders/types/work-orders";
+import { ActivityType, type CreateActivityDTO, type Input as InputType } from "@/types";
 import { useInputs } from "../hooks/useInputs";
 import { workOrdersApi } from "../services/work-orders-api";
 import useAuth from "@/modules/Auth/hooks/useAuth";
@@ -91,7 +91,7 @@ export function AddActivityDialog({ open, onOpenChange, workOrderId, onActivityC
 
       // Validar stock disponible
       const selectedInput = inputs.find(i => i.id === input.inputId);
-      if (selectedInput && input.quantityUsed > selectedInput.stock) {
+      if (selectedInput && input.quantityUsed > selectedInput.stock!) {
         newErrors[`quantity_${index}`] = `Stock insuficiente. Disponible: ${selectedInput.stock} ${selectedInput.unit}`;
       }
     });
@@ -110,7 +110,7 @@ export function AddActivityDialog({ open, onOpenChange, workOrderId, onActivityC
     setSubmitting(true);
 
     try {
-      const activityData: CreateActivityDto = {
+      const activityData: CreateActivityDTO = {
         workOrderId,
         type: formData.type,
         executionDate: new Date(formData.executionDate).toISOString(),

@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, User, FileText, AlertTriangle, Clock } from "lucide-react";
-import type { WorkOrder } from "@/modules/WorkOrders/types/work-orders";
+import type { WorkOrder } from "@/types";
 import { WorkOrderStatusBadge } from "./WorkOrderStatusBadge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

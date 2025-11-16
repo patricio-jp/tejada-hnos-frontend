@@ -4,14 +4,14 @@ import { toast } from 'sonner';
 
 import { WorkOrderForm } from '../components/WorkOrderForm';
 import { useWorkOrders } from '../hooks/useWorkOrders';
-import type { CreateWorkOrderInput } from '../types';
+import type { CreateWorkOrderDTO } from '@/types';
 
 export function WorkOrderFormPage() {
   const navigate = useNavigate();
   const { createWorkOrder, createWorkOrderStatus } = useWorkOrders();
 
   const handleSubmit = useCallback(
-    async (formData: CreateWorkOrderInput) => {
+    async (formData: CreateWorkOrderDTO) => {
       try {
         await createWorkOrder(formData);
         toast.success('Orden de trabajo creada', {

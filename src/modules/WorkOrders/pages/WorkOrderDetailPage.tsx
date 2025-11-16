@@ -26,7 +26,7 @@ import type { FeatureCollection } from "geojson";
 import { getDateWarning } from "../utils/date-helpers";
 import { useWorkOrderActions } from "../hooks/useWorkOrderActions";
 import { WorkOrderActionDialog } from "../components/WorkOrderActionDialog";
-import type { WorkOrderStatus } from "../types/work-orders";
+import type { WorkOrderStatus } from "@/types";
 
 const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   PODA: "Poda",

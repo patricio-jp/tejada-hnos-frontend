@@ -6,9 +6,12 @@
 // ============================================
 // Módulo: Activities
 // ============================================
-export type {
+export {
   ActivityType,
-  ActivityStatus,
+  ActivityStatus
+} from './activities';
+
+export type {
   Activity,
   ActivityFilters,
   ActivityStats,
@@ -158,9 +161,12 @@ export type {
 // ============================================
 // Módulo: Work Orders
 // ============================================
+export {
+  WorkOrderStatus
+} from './work-orders';
+
 export type {
   WorkOrder,
-  WorkOrderStatus,
   WorkOrdersFilters,
   CreateWorkOrderDTO,
   UpdateWorkOrderDTO,

@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import plotApi from '../utils/plot-api';
-import { userApi, type User } from '../utils/user-api';
-import type { CreateWorkOrderInput } from '../types';
+import { userApi } from '../utils/user-api';
+import type { CreateWorkOrderDTO, User } from '@/types';
 
 type WorkOrderFormProps = {
   onSubmit?: (payload: WorkOrderFormData) => Promise<void> | void;
   onCancel?: () => void;
 };
 
-export type WorkOrderFormData = CreateWorkOrderInput & {
+export type WorkOrderFormData = CreateWorkOrderDTO & {
   assignedToId?: string;
 };
 

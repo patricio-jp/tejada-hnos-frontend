@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { WorkOrder } from '../types';
+import type { WorkOrder } from '@/types';
 
 type WorkOrdersTableProps = {
   workOrders: WorkOrder[];

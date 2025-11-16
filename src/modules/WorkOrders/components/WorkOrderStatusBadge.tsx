@@ -1,17 +1,17 @@
 import { Badge } from "@/components/ui/badge";
-import { WorkOrderStatus } from "@/modules/WorkOrders/types/work-orders";
+import { WorkOrderStatus, type WorkOrder } from "@/types";
 
 interface WorkOrderStatusBadgeProps {
-  status: WorkOrderStatus;
+  status: WorkOrder['status'];
 }
 
 export function WorkOrderStatusBadge({ status }: WorkOrderStatusBadgeProps) {
-  const variants: Record<WorkOrderStatus, { variant: "default" | "secondary" | "destructive" | "outline" | "warning"; label: string }> = {
-    PENDING: { variant: "outline", label: "Pendiente" },
-    IN_PROGRESS: { variant: "default", label: "En Progreso" },
-    UNDER_REVIEW: { variant: "warning", label: "En Revisión" },
-    COMPLETED: { variant: "secondary", label: "Completada" },
-    CANCELLED: { variant: "destructive", label: "Cancelada" },
+  const variants: Record<WorkOrder['status'], { variant: "default" | "secondary" | "destructive" | "outline" | "warning"; label: string }> = {
+    [WorkOrderStatus.PENDING]: { variant: "outline", label: "Pendiente" },
+    [WorkOrderStatus.IN_PROGRESS]: { variant: "default", label: "En Progreso" },
+    [WorkOrderStatus.UNDER_REVIEW]: { variant: "warning", label: "En Revisión" },
+    [WorkOrderStatus.COMPLETED]: { variant: "secondary", label: "Completada" },
+    [WorkOrderStatus.CANCELLED]: { variant: "destructive", label: "Cancelada" },
   };
 
   const config = variants[status];
