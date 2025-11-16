@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { SupplierForm } from './SupplierForm';
-import type { Supplier } from '../types/supplier';
+import type { Supplier } from '@/types';
 
 interface SupplierDialogProps {
   open: boolean;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supplierApi } from '../utils/supplier-api';
-import type { Supplier, SupplierFilters } from '../types/supplier';
+import type { Supplier, SupplierFilters } from '@/types';
 
 /**
  * Hook para gestión de proveedores con funcionalidades completas:
