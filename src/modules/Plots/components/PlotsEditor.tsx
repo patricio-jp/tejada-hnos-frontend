@@ -31,9 +31,17 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   // Actualizar plots cuando el hook carga nuevos datos
   useEffect(() => {
     if (hookPlots && hookPlots.length > 0) {
-      setPlots(hookPlots);
+      // Filtrar plots que pertenecen al field actual (por si acaso el backend retorna todos)
+      const filteredPlots = hookPlots.filter((plot: any) => {
+        // Si el plot tiene fieldId, verificar que coincida
+        if (plot.fieldId && plot.fieldId !== field.id) {
+          return false;
+        }
+        return true;
+      });
+      setPlots(filteredPlots);
     }
-  }, [hookPlots]);
+  }, [hookPlots, field.id]);
 
   // Convertir plots a FeatureCollection para el mapa (memoizado)
   const mapData = useMemo(() => plotsToFeatureCollection(plots), [plots]);
