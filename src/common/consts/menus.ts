@@ -1,4 +1,4 @@
-import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, ListChecks, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, Package } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -73,6 +73,17 @@ export const MENUS_MAIN: MenuItem[] = [
         {
           title: "Variedades",
           url: "/varieties",
+        },
+      ],
+    },
+    {
+      title: "Bodega",
+      url: "/inputs",
+      icon: Package,
+      items: [
+        {
+          title: "Inventario de insumos",
+          url: "/inputs",
         },
       ],
     },

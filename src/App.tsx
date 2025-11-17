@@ -64,6 +64,7 @@ const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/page
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
+const InputsInventoryPage = React.lazy(() => import('./modules/Inputs/pages/InputsInventoryPage'));
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'));
@@ -109,6 +110,7 @@ export default function App() {
               <Route path="suppliers" element={<SuppliersPage />} />
               <Route path="customers" element={<CustomersPage />} />
               <Route path="varieties" element={<VarietiesPage />} />
+              <Route path="inputs" element={<InputsInventoryPage />} />
               {/* Rutas de Órdenes de Compra */}
               <Route path="purchases">
                 <Route index element={<PurchaseOrdersListPage />} />
