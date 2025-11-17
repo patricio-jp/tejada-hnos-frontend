@@ -109,6 +109,20 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
               </NativeSelect>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="plot-area" className="text-right">
+                Área (ha)
+              </Label>
+              <Input
+                id="plot-area"
+                type="number"
+                step="0.0001"
+                value={getPlotValue('area') || ''}
+                onChange={(event) => updatePlot('area', parseFloat(event.target.value) || 0)}
+                className="col-span-3"
+                disabled={isNewPlot} // No permitir editar área de nuevo plot (se calcula automáticamente)
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Color</Label>
               <div className="col-span-3 flex items-center gap-2">
                 <span

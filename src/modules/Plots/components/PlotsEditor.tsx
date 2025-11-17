@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { Field, Plot } from "@/lib/map-types";
 import type { FeatureCollection, Feature, Polygon } from "geojson";
-import { computePolygonCentroid } from "@/common/utils/geometry";
+import { computePolygonCentroid, computePolygonAreaHectares } from "@/common/utils/geometry";
 import { hexToRGBA } from "@/common/utils/color-utils";
 import InteractiveMap from "@/common/components/InteractiveMap";
 import { plotsToFeatureCollection, featureCollectionToPlots } from "@/common/utils/plot-map-utils";
@@ -152,11 +152,14 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   const handleNewPolygonCreated = useCallback((feature: Feature<Polygon>) => {
     console.log('Nuevo polígono creado:', feature);
     
+    // Calcular el área automáticamente desde la geometría
+    const area = computePolygonAreaHectares(feature.geometry.coordinates);
+    
     // Guardar el polígono temporalmente y abrir diálogo de creación
     const tempPlot: Plot = {
       id: feature.id as string,
       name: '',
-      area: 0,
+      area: area,
       fieldId: field.id,
       location: feature.geometry,
       varietyId: undefined,
