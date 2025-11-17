@@ -71,12 +71,23 @@ export function usePlots(fieldId: string) {
   const updatePlot = useCallback(async (plotId: string, plotData: UpdatePlotDto): Promise<Plot> => {
     try {
       setError(null);
+      console.log('🔧 [usePlots] Antes de update - Plots actuales:', plots);
+      
       const updatedPlot = await plotApi.update(plotId, plotData);
+      console.log('🔧 [usePlots] Respuesta del update:', JSON.stringify(updatedPlot, null, 2));
       
       // Actualizar en el estado local
-      setPlots(prev => prev.map(plot => 
-        plot.id === plotId ? updatedPlot : plot
-      ));
+  
+        const newPlots = plots.map(plot => {
+          if (plot.id === plotId) {
+            console.log('🔧 [usePlots] Reemplazando plot:', plot.id);
+            console.log('🔧 [usePlots] Con:', JSON.stringify(updatedPlot, null, 2));
+            return updatedPlot;
+          }
+          return plot;
+        });
+        console.log('🔧 [usePlots] Después de update - Nuevo estado:', newPlots);
+      setPlots( newPlots);
       
       return updatedPlot;
     } catch (err) {
@@ -84,7 +95,7 @@ export function usePlots(fieldId: string) {
       setError(errorMessage);
       throw err;
     }
-  }, []);
+  }, [plots]);
 
   /**
    * Eliminar un plot permanentemente (hard delete)

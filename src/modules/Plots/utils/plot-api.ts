@@ -117,8 +117,13 @@ export const plotApi = {
   async update(plotId: string, data: UpdatePlotDto): Promise<Plot> {
     return fetchWithRetry(async () => {
       const url = `/plots/${plotId}`;
-      console.log('Haciendo PUT a:', url, 'con data:', data);
-      return apiClient.put<Plot>(url, data);
+      console.log('🔧 [Frontend] Haciendo PUT a:', url);
+      console.log('🔧 [Frontend] Data a enviar:', JSON.stringify(data, null, 2));
+      
+      const response = await apiClient.put<Plot>(url, data);
+      
+      console.log('🔧 [Frontend] Respuesta del PUT:', response);
+      return response;
     }, 1);
   },
 

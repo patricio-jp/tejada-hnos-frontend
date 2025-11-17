@@ -1,6 +1,6 @@
 // src/components/PlotsEditor.tsx
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { Field, Plot } from "@/lib/map-types";
 import type { FeatureCollection, Feature, Polygon } from "geojson";
 import { computePolygonCentroid, computePolygonAreaHectares } from "@/common/utils/geometry";
@@ -10,6 +10,7 @@ import { plotsToFeatureCollection, featureCollectionToPlots } from "@/common/uti
 import { PlotDetailsSheet } from "./PlotDetailsSheet";
 import { PlotEditDialog } from "./PlotEditDialog";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PenTool, Loader2 } from "lucide-react";
 import { usePlots } from "../hooks/usePlots";
 
@@ -28,6 +29,11 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   const [newPolygon, setNewPolygon] = useState<Feature<Polygon> | null>(null); // Para capturar nuevo polígono sin guardar
   const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
   const [isSavingChanges, setIsSavingChanges] = useState(false);
+  const [editingGeometryPlotId, setEditingGeometryPlotId] = useState<string | null>(null); // ID del plot siendo editado geométricamente
+  const originalGeometryBeforeEdit = useRef<any>(null); // Guardar geometría original antes de editar
+  const editedGeometryData = useRef<FeatureCollection | null>(null); // Ref para geometría mientras se edita
+  const [isSavingGeometry, setIsSavingGeometry] = useState(false);
+  const [showSaveGeometryConfirm, setShowSaveGeometryConfirm] = useState(false);
 
   // Actualizar plots cuando el hook carga nuevos datos
   useEffect(() => {
@@ -108,6 +114,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         isFieldBoundary: true, // Marcador especial
       }
     } as Feature<Polygon>;
+    
   }, [field.id, field.name, fieldGeometry]);
 
   // Combinar el boundary del campo con los plots (memoizado)
@@ -130,23 +137,22 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     
     setPlots(updatedPlots);
     
-    // Guardar cambios en el backend
-    handleSavePlotsChanges(updatedPlots);
-  }, [plots]);
-
-  // Handler para guardar cambios en el backend
-  const handleSavePlotsChanges = useCallback(async (updatedPlots: Plot[]) => {
-    setIsSavingChanges(true);
-    try {
-      // Por ahora solo actualizamos el estado local
-      // En una implementación completa, enviaríamos cambios al backend
-      console.log('Cambios en plots guardados (local):', updatedPlots);
-    } catch (error) {
-      console.error('Error saving plot changes:', error);
-    } finally {
-      setIsSavingChanges(false);
+    // Si estamos editando geometría, guardar los datos editados en ref para usarlos después
+    if (editingGeometryPlotId) {
+      editedGeometryData.current = featureCollection;
+      console.log('🔄 Datos de geometría actualizados en ref:', featureCollection);
     }
-  }, []);
+    
+    // Si creamos un nuevo plot, abrir diálogo
+    if (updatedPlots.length > plots.length && !editingGeometryPlotId) {
+      setMapMode('select');
+      // Solo abrir diálogo si es un nuevo plot
+      const lastPlot = updatedPlots[updatedPlots.length - 1];
+      if (lastPlot && !plots.find(p => p.id === lastPlot.id)) {
+        setSelectedPlot(lastPlot);
+      }
+    }
+  }, [plots, editingGeometryPlotId]);
 
   // Handler para cuando se crea un nuevo polígono en el mapa
   const handleNewPolygonCreated = useCallback((feature: Feature<Polygon>) => {
@@ -219,26 +225,31 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, []);
 
   // Handler para cuando se selecciona una parcela en el mapa
+  // Handler para cuando se selecciona una parcela en el mapa
   const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
-    if (feature && feature.id) {
-      // Buscar el plot por ID en lugar de por índice
-      const plot = plots.find(p => p.id === feature.id);
+    if (feature && index !== null) {
+      // Encontrar el plot correspondiente por índice (como en FieldsEditor)
+      const plot = plots[index];
       if (plot) {
         setSelectedPlot(plot);
         const plotName = (plot as any).name || (plot as any).properties?.name || plot.id;
         console.log('Parcela seleccionada:', plotName);
       }
     } else {
-      setSelectedPlot(null);
+      // No permitir deseleccionar si estamos editando geometría
+      if (!editingGeometryPlotId) {
+        setSelectedPlot(null);
+      }
     }
-  }, [plots]);
+  }, [plots, editingGeometryPlotId]);
 
   // Handler para cerrar el sheet (deseleccionar manualmente)
   const handleCloseSheet = useCallback(() => {
-    setSelectedPlot(null);
-    // Forzar actualización del mapa creando nueva referencia de plots
-    setPlots((current) => [...current]);
-  }, []);
+    // No cerrar si estamos editando geometría
+    if (!editingGeometryPlotId) {
+      setSelectedPlot(null);
+    }
+  }, [editingGeometryPlotId]);
 
   // Handler para eliminar una parcela
   const handleDeletePlot = useCallback(async (plot: Plot) => {
@@ -254,11 +265,22 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, [deletePlot]);
 
   // Handler para iniciar edición de geometría
-  const handleEditGeometry = useCallback((_plot: Plot) => {
-    setSelectedPlot(null); // Cerrar el sheet
+  const handleEditGeometry = useCallback((plot: Plot) => {
+    // NO cerrar el sheet - mantener el plot seleccionado para que el mapa sepa cuál editar
+    setEditingGeometryPlotId(plot.id as string); // Marcar qué plot está siendo editado
+    // Guardar geometría original antes de editar (para poder revertir)
+    originalGeometryBeforeEdit.current = plot.location;
     setMapMode('edit'); // Activar modo de edición en el mapa
-    // La parcela permanece seleccionada en el mapa para que se pueda editar
   }, []);
+
+  // Handler cuando el usuario presiona "Guardar Geometría" en el mapa
+  const handleGeometrySaveRequested = useCallback(() => {
+    if (!editingGeometryPlotId) return;
+    
+    console.log('🔔 Usuario presionó Guardar Geometría en el mapa');
+    // Abrir diálogo de confirmación
+    setShowSaveGeometryConfirm(true);
+  }, [editingGeometryPlotId]);
 
   // Handler para guardar detalles de la parcela editada
   const handleSavePlotDetails = useCallback(async () => {
@@ -324,6 +346,95 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       setIsSavingChanges(false);
     }
   }, [editingPlot, updatePlot]);
+
+  // Handler para guardar la geometría editada
+  const handleSaveGeometry = useCallback(async () => {
+    if (!editingGeometryPlotId) return;
+
+    setIsSavingGeometry(true);
+    setShowSaveGeometryConfirm(false);
+
+    try {
+      // Obtener la geometría actualizada del plot editado
+      // Primero intentar desde el ref (tiene los datos más actualizados)
+      // Si no, usar del array plots
+      let updatedLocation;
+      
+      if (editedGeometryData.current) {
+        // Buscar el feature editado en el ref
+        const features = editedGeometryData.current.features.filter(f => !f.properties?.isFieldBoundary);
+        const editedFeature = features.find(f => f.id === editingGeometryPlotId || f.properties?.plotId === editingGeometryPlotId);
+        updatedLocation = editedFeature?.geometry;
+      }
+      
+      // Si aún no tenemos location, usar del array plots (fallback)
+      if (!updatedLocation) {
+        const editedPlot = plots.find(p => p.id === editingGeometryPlotId);
+        updatedLocation = editedPlot?.location;
+      }
+      
+      if (!updatedLocation) {
+        console.error('❌ No se encontró la geometría del plot');
+        return;
+      }
+
+      const editedPlot = plots.find(p => p.id === editingGeometryPlotId);
+      if (!editedPlot) {
+        console.error('❌ Plot no encontrado:', editingGeometryPlotId);
+        return;
+      }
+
+      const newArea = computePolygonAreaHectares(updatedLocation.coordinates);
+
+      console.log('✅ Guardando geometría con location:', updatedLocation);
+      
+      // Actualizar en el backend
+      const result = await updatePlot(editingGeometryPlotId, {
+        location: updatedLocation,
+        area: newArea,
+        name: editedPlot.name,
+        varietyId: editedPlot.varietyId,
+      });
+
+      console.log('✅ Geometría guardada exitosamente:', result);
+
+      // Limpiar estado de edición
+      setEditingGeometryPlotId(null);
+      originalGeometryBeforeEdit.current = null;
+      editedGeometryData.current = null;
+      setShowSaveGeometryConfirm(false);
+      setMapMode('select');
+      
+      console.log('✅ Geometría guardada y datos limpiados');
+    } catch (error) {
+      console.error('❌ Error al guardar geometría:', error);
+      alert('Error al guardar la geometría. Intenta de nuevo.');
+    } finally {
+      setIsSavingGeometry(false);
+    }
+  }, [editingGeometryPlotId, plots, updatePlot]);
+
+  // Handler para cancelar edición de geometría
+  const handleCancelGeometryEdit = useCallback(() => {
+    if (editingGeometryPlotId && originalGeometryBeforeEdit.current) {
+      // Revertir a la geometría original
+      const plotIndex = plots.findIndex(p => p.id === editingGeometryPlotId);
+      if (plotIndex >= 0) {
+        const updatedPlots = [...plots];
+        updatedPlots[plotIndex] = {
+          ...updatedPlots[plotIndex],
+          location: originalGeometryBeforeEdit.current
+        };
+        setPlots(updatedPlots);
+      }
+    }
+    
+    // Limpiar estado
+    setEditingGeometryPlotId(null);
+    originalGeometryBeforeEdit.current = null;
+    setShowSaveGeometryConfirm(false);
+    setMapMode('select');
+  }, [editingGeometryPlotId, plots]);
 
   // Función para obtener el color del polígono
   const getPlotColor = useCallback((feature: Feature | null, isSelected: boolean): [number, number, number, number] => {
@@ -395,6 +506,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       <InteractiveMap
         initialData={combinedData}
         onDataChange={handleMapDataChange}
+        onGeometrySaveRequested={handleGeometrySaveRequested}
         onFeatureSelect={handleFeatureSelect}
         onNewPolygonCreated={handleNewPolygonCreated}
         getPolygonColor={getPlotColor}
@@ -429,6 +541,32 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
           setMapMode('edit'); // Activar modo de edición en el mapa
         }}
       />
+
+      <AlertDialog open={showSaveGeometryConfirm} onOpenChange={setShowSaveGeometryConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Guardar cambios en la geometría?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Has modificado el polígono de la parcela. ¿Deseas guardar estos cambios permanentemente?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelGeometryEdit}>
+              Cancelar cambios
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveGeometry} disabled={isSavingGeometry}>
+              {isSavingGeometry ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Geometría'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

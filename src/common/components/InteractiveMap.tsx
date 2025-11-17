@@ -33,6 +33,7 @@ type Mode = 'view' | 'drawPolygon' | 'select' | 'edit';
 interface InteractiveMapProps {
   initialData?: FeatureCollection;
   onDataChange?: (data: FeatureCollection) => void;
+  onGeometrySaveRequested?: () => void; // Callback cuando el usuario presiona "Guardar Geometría"
   onFeatureSelect?: (feature: Feature | null, index: number | null) => void;
   onNewPolygonCreated?: (feature: Feature<Polygon>) => void; // Callback cuando se crea un nuevo polígono
   editable?: boolean;
@@ -66,6 +67,7 @@ const MAPTILER_STYLE_URL = `https://api.maptiler.com/maps/streets-v2/style.json?
 const InteractiveMap: React.FC<InteractiveMapProps> = ({
   initialData,
   onDataChange,
+  onGeometrySaveRequested,
   onFeatureSelect,
   onNewPolygonCreated,
   editable = true,
@@ -347,10 +349,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         const newFeatures = [...data.features];
         newFeatures[featureIndex] = updatedFeature;
         
-        setData({
+        const newData: FeatureCollection = {
           type: 'FeatureCollection',
           features: newFeatures,
-        });
+        };
+        
+        setData(newData);
         
         // Iniciar drag del nuevo vértice
         isMouseDownRef.current = true;
@@ -387,9 +391,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   // Handler para guardar cambios de geometría
   const handleSaveGeometry = useCallback(() => {
     onDataChange?.(data);
+    // 🔔 Notificar al padre que se guardó la geometría
+    onGeometrySaveRequested?.();
     changeMode('select');
     console.log('💾 Geometría guardada');
-  }, [data, onDataChange, changeMode]);
+  }, [data, onDataChange, onGeometrySaveRequested, changeMode]);
   
   // Effect para agregar/remover event listener de mouseup global
   useEffect(() => {
