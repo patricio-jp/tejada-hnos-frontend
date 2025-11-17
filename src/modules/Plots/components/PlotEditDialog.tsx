@@ -17,6 +17,7 @@ interface PlotEditDialogProps {
   onUpdate: (plot: Plot | any) => void;
   onClose: () => void;
   onSave: () => void;
+  isNewPlot?: boolean; // Indicar si es un nuevo plot siendo creado
   onEditGeometry?: (plot: Plot | any) => void;
 }
 
@@ -25,6 +26,7 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
   onUpdate,
   onClose,
   onSave,
+  isNewPlot = false,
   onEditGeometry,
 }) => {
   const { varieties } = useVarieties();
@@ -71,7 +73,9 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
     <Dialog open={!!plot} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="z-[9999]">
         <DialogHeader>
-          <DialogTitle>Editar Parcela: {getPlotName()}</DialogTitle>
+          <DialogTitle>
+            {isNewPlot ? 'Nueva Parcela' : `Editar Parcela: ${getPlotName()}`}
+          </DialogTitle>
         </DialogHeader>
         {plot && (
           <div className="grid gap-4 py-4">
@@ -119,17 +123,21 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
           </div>
         )}
         <DialogFooter>
-          <Button
-            variant="secondary"
-            onClick={() => plot && onEditGeometry?.(plot)}
-            disabled={!plot || !onEditGeometry}
-          >
-            Editar geometría
-          </Button>
+          {!isNewPlot && (
+            <Button
+              variant="secondary"
+              onClick={() => plot && onEditGeometry?.(plot)}
+              disabled={!plot || !onEditGeometry}
+            >
+              Editar geometría
+            </Button>
+          )}
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={onSave}>Guardar Cambios</Button>
+          <Button onClick={onSave}>
+            {isNewPlot ? 'Crear Parcela' : 'Guardar Cambios'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

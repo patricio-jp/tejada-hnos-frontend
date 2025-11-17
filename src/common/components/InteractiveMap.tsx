@@ -34,6 +34,7 @@ interface InteractiveMapProps {
   initialData?: FeatureCollection;
   onDataChange?: (data: FeatureCollection) => void;
   onFeatureSelect?: (feature: Feature | null, index: number | null) => void;
+  onNewPolygonCreated?: (feature: Feature<Polygon>) => void; // Callback cuando se crea un nuevo polígono
   editable?: boolean;
   initialViewState?: {
     longitude: number;
@@ -66,6 +67,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   initialData,
   onDataChange,
   onFeatureSelect,
+  onNewPolygonCreated,
   editable = true,
   initialViewState: initialViewStateProp,
   showControls = true, // Por defecto mostrar controles
@@ -216,9 +218,11 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     const newFeature: Feature<Polygon> = {
       type: 'Feature',
+      id: `temp-${Date.now()}`, // ID temporal para identificar mientras se completan datos
       properties: {
-        id: Date.now(),
-        name: `Polígono ${data.features.length + 1}`
+        id: `temp-${Date.now()}`,
+        name: '',
+        isNewPolygon: true, // Marcador para saber que es nuevo
       },
       geometry: {
         type: 'Polygon',
@@ -226,17 +230,15 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       }
     };
 
-    const newData = {
-      type: 'FeatureCollection' as const,
-      features: [...data.features, newFeature]
-    };
-
-    setData(newData);
-    onDataChange?.(newData);
-
+    // Llamar callback para que el padre abra el diálogo de creación
+    onNewPolygonCreated?.(newFeature);
+    
+    // NO agregar a data ni llamar onDataChange aquí
+    // El padre será responsable de hacerlo después de que el usuario complete los datos
+    
     setDrawingPoints([]);
     changeMode('select');
-  }, [drawingPoints, data.features, onDataChange, changeMode]);
+  }, [drawingPoints, onNewPolygonCreated, changeMode]);
 
   // Función para cancelar el dibujo
   const cancelDrawing = useCallback(() => {

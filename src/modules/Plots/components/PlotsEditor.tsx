@@ -25,6 +25,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   const [plots, setPlots] = useState<any[]>(field.plots || []);
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
+  const [newPolygon, setNewPolygon] = useState<Feature<Polygon> | null>(null); // Para capturar nuevo polígono sin guardar
   const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
   const [isSavingChanges, setIsSavingChanges] = useState(false);
 
@@ -145,6 +146,73 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     } finally {
       setIsSavingChanges(false);
     }
+  }, []);
+
+  // Handler para cuando se crea un nuevo polígono en el mapa
+  const handleNewPolygonCreated = useCallback((feature: Feature<Polygon>) => {
+    console.log('Nuevo polígono creado:', feature);
+    
+    // Guardar el polígono temporalmente y abrir diálogo de creación
+    const tempPlot: Plot = {
+      id: feature.id as string,
+      name: '',
+      area: 0,
+      fieldId: field.id,
+      location: feature.geometry,
+      varietyId: undefined,
+      variety: undefined,
+      datePlanted: undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    setNewPolygon(feature);
+    setEditingPlot(tempPlot);
+  }, [field.id]);
+
+  // Handler para guardar el nuevo plot creado
+  const handleSaveNewPlot = useCallback(async () => {
+    if (!editingPlot || !newPolygon) return;
+
+    try {
+      setIsSavingChanges(true);
+
+      // Preparar datos para crear el plot
+      const plotData: any = {
+        name: editingPlot.name || `Parcela ${plots.length + 1}`,
+        area: editingPlot.area || 0,
+        location: newPolygon.geometry,
+        varietyId: editingPlot.varietyId || undefined,
+        datePlanted: editingPlot.datePlanted || undefined,
+      };
+
+      console.log('Creando nuevo plot con datos:', plotData);
+
+      // Crear el plot en el backend
+      const createdPlot = await createPlot(plotData);
+
+      console.log('Plot creado exitosamente:', createdPlot);
+
+      // Agregar el plot al estado local con el ID real del backend
+      setPlots((prev) => [...prev, createdPlot]);
+
+      // Limpiar estados
+      setNewPolygon(null);
+      setEditingPlot(null);
+      setMapMode('select');
+    } catch (error) {
+      console.error('Error creating new plot:', error);
+      alert('Error al crear la parcela. Intenta de nuevo.');
+    } finally {
+      setIsSavingChanges(false);
+    }
+  }, [editingPlot, newPolygon, plots.length, createPlot]);
+
+  // Handler para cancelar creación de nuevo plot
+  const handleCancelNewPlot = useCallback(() => {
+    setNewPolygon(null);
+    setEditingPlot(null);
+    setMapMode('select');
   }, []);
 
   // Handler para cuando se selecciona una parcela en el mapa
@@ -294,6 +362,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   const handleCloseEditDialog = useCallback(() => {
     setEditingPlot(null);
     setSelectedPlot(null);
+    setNewPolygon(null);
     // Forzar actualización del mapa creando nueva referencia de plots
     setPlots((current) => [...current]);
   }, []);
@@ -324,6 +393,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         initialData={combinedData}
         onDataChange={handleMapDataChange}
         onFeatureSelect={handleFeatureSelect}
+        onNewPolygonCreated={handleNewPolygonCreated}
         getPolygonColor={getPlotColor}
         availableModes={['view', 'drawPolygon', 'select', 'edit']}
         visibleButtons={['view', 'select']}
@@ -348,8 +418,9 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       <PlotEditDialog
         plot={editingPlot}
         onUpdate={(plot) => setEditingPlot(plot)}
-        onClose={handleCloseEditDialog}
-        onSave={handleSavePlotDetails}
+        onClose={newPolygon ? handleCancelNewPlot : handleCloseEditDialog}
+        onSave={newPolygon ? handleSaveNewPlot : handleSavePlotDetails}
+        isNewPlot={!!newPolygon}
         onEditGeometry={() => {
           setEditingPlot(null);
           setMapMode('edit'); // Activar modo de edición en el mapa
