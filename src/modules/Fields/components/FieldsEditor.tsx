@@ -52,9 +52,17 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
   // Actualizar selectedField con los plots cargados
   useEffect(() => {
     if (selectedField && selectedFieldPlots && selectedFieldPlots.length > 0) {
-      setSelectedField(prev => prev ? { ...prev, plots: selectedFieldPlots as any } : null);
+      // Filtrar plots que pertenecen al field actual (por si el backend retorna todos)
+      const filteredPlots = selectedFieldPlots.filter((plot: any) => {
+        // Si el plot tiene fieldId, verificar que coincida
+        if (plot.fieldId && plot.fieldId !== selectedField.id) {
+          return false;
+        }
+        return true;
+      });
+      setSelectedField(prev => prev ? { ...prev, plots: filteredPlots as any } : null);
     }
-  }, [selectedFieldPlots]);
+  }, [selectedFieldPlots, selectedField?.id]);
 
   // Convertir fields a FeatureCollection para el mapa (memoizado para evitar recreaciones innecesarias)
   const mapData = useMemo(() => fieldsToFeatureCollection(localFields), [localFields]);

@@ -18,7 +18,10 @@ export function usePlots(fieldId: string) {
    * Obtener todos los plots del campo
    */
   const fetchPlots = useCallback(async () => {
-    if (!fieldId) return;
+    if (!fieldId) {
+      setPlots([]); // Limpiar plots si no hay fieldId
+      return;
+    }
     
     try {
       setLoading(true);
