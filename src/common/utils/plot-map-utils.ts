@@ -6,17 +6,29 @@ import { computePolygonAreaHectares } from './geometry';
 
 /**
  * Convierte un array de Plots a FeatureCollection para usar con InteractiveMap
+ * Maneja tanto plots del backend (con location) como del editor (con geometry)
  */
 export function plotsToFeatureCollection(plots: Plot[]): FeatureCollection {
-  const features: Feature<Polygon>[] = plots.map(plot => ({
-    type: 'Feature',
-    id: plot.id,
-    geometry: plot.geometry,
-    properties: {
-      ...plot.properties,
-      plotId: plot.id,
-    }
-  }));
+  const features: Feature<Polygon>[] = plots
+    .filter(plot => {
+      // Solo incluir plots que tengan geometría
+      const hasGeometry = (plot as any).geometry || (plot as any).location;
+      return !!hasGeometry;
+    })
+    .map(plot => {
+      // Determinar la geometría: puede venir como 'geometry' (editor) o 'location' (backend)
+      const geometry = (plot as any).geometry || (plot as any).location;
+      
+      return {
+        type: 'Feature',
+        id: plot.id,
+        geometry: geometry as Polygon,
+        properties: {
+          ...plot.properties,
+          plotId: plot.id,
+        }
+      };
+    });
 
   return {
     type: 'FeatureCollection',

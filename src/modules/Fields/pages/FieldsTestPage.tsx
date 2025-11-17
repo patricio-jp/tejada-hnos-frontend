@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useFields } from '../hooks/useFields';
-import { usePlots } from '../../Plots/hooks/usePlots';
 import { useCapataces } from '../hooks/useUsers';
 import { fieldApi } from '../utils/field-api';
 import { plotApi } from '../../Plots/utils/plot-api';
@@ -22,7 +21,7 @@ interface TestResult {
 
 export default function FieldsTestPage() {
   const { fields, loading: loadingFields } = useFields();
-  const { plots, loading: loadingPlots } = usePlots();
+  const [plots, setPlots] = useState<any[]>([]);
   const { capataces, loading: loadingCapataces } = useCapataces();
   
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -136,46 +135,34 @@ export default function FieldsTestPage() {
     // ========== TESTS DE PLOTS ==========
     addLog('\n🌱 === TESTS DE PLOTS ===');
     
-    // Test 4: GET /plots
-    totalTests++;
-    if (await runTest(
-      'get-plots',
-      'GET /plots - Obtener todas las parcelas',
-      async () => {
-        const data = await plotApi.getAll();
-        addLog(`   📊 Parcelas encontradas: ${data.length}`);
-        if (data.length > 0) {
-          addLog(`   📝 Primera parcela: ${data[0].name} (${data[0].area} ha)`);
-        }
-        return data;
-      }
-    )) passedTests++;
-
-    // Test 5: GET /plots con filtro por field
+    // Test 4: GET /plots by field
     if (fields.length > 0) {
       totalTests++;
       if (await runTest(
-        'get-plots-by-field',
-        `GET /plots?fieldId=${fields[0].id} - Filtrar parcelas por campo`,
+        'get-plots-all',
+        `GET /fields/${fields[0].id}/plots - Obtener parcelas del primer campo`,
         async () => {
-          const data = await plotApi.getByFieldId(fields[0].id);
-          addLog(`   📊 Parcelas en campo "${fields[0].name}": ${data.length}`);
+          const data = await plotApi.getAllByField(fields[0].id);
+          addLog(`   📊 Parcelas encontradas: ${data.length}`);
+          if (data.length > 0) {
+            addLog(`   📝 Primera parcela: ${data[0].name} (${data[0].area} ha)`);
+            setPlots(data);
+          }
           return data;
         }
       )) passedTests++;
     }
 
-    // Test 6: GET /plots/:id (si hay plots)
-    if (plots.length > 0) {
+    // Test 5: GET /plots/:id (si hay plots)
+    if (plots.length > 0 && fields.length > 0) {
       totalTests++;
       if (await runTest(
         'get-plot-by-id',
-        `GET /plots/${plots[0].id} - Obtener parcela específica`,
+        `GET /fields/${fields[0].id}/plots/${plots[0].id} - Obtener parcela específica`,
         async () => {
-          const data = await plotApi.getById(plots[0].id);
+          const data = await plotApi.getById(fields[0].id, plots[0].id);
           addLog(`   📝 Parcela: ${data.name}`);
-          addLog(`   🌿 Variedad: ${data.variety ? data.variety.name : 'Sin asignar'}`);
-          addLog(`   📍 Campo: ${data.field ? data.field.name : 'Sin campo'}`);
+          addLog(`   📍 Área: ${data.area}`);
           return data;
         }
       )) passedTests++;
@@ -283,7 +270,7 @@ export default function FieldsTestPage() {
           <CardContent>
             <div className="text-2xl font-bold">{plots.length}</div>
             <p className="text-xs text-muted-foreground">
-              {loadingPlots ? 'Cargando...' : 'Parcelas encontradas'}
+              Parcelas encontradas
             </p>
           </CardContent>
         </Card>

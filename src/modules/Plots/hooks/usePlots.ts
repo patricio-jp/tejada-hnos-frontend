@@ -2,27 +2,28 @@
  * usePlots Hook - Gestión de estado para Plots
  * 
  * Hook personalizado que encapsula la lógica de comunicación con la API de Plots
- * y gestiona el estado local de las parcelas.
+ * y gestiona el estado local de los plots.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { plotApi, type CreatePlotDto, type UpdatePlotDto, type PlotFilters } from '../utils/plot-api';
+import { plotApi, type CreatePlotDto, type UpdatePlotDto } from '../utils/plot-api';
 import type { Plot } from '@/types/plots';
 
-export function usePlots(initialFilters?: PlotFilters) {
+export function usePlots(fieldId: string) {
   const [plots, setPlots] = useState<Plot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<PlotFilters | undefined>(initialFilters);
 
   /**
-   * Obtener todas las parcelas con filtros
+   * Obtener todos los plots del campo
    */
   const fetchPlots = useCallback(async () => {
+    if (!fieldId) return;
+    
     try {
       setLoading(true);
       setError(null);
-      const data = await plotApi.getAll(filters);
+      const data = await plotApi.getAllByField(fieldId);
       setPlots(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -31,45 +32,24 @@ export function usePlots(initialFilters?: PlotFilters) {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [fieldId]);
 
   /**
-   * Cargar plots al montar o cuando cambien los filtros
+   * Cargar plots al montar o cuando cambie fieldId
    */
   useEffect(() => {
     fetchPlots();
   }, [fetchPlots]);
 
   /**
-   * Crear una nueva parcela en un campo específico (nested route)
-   * Este es el método preferido cuando se crea desde el contexto de un field
-   */
-  const createPlotInField = useCallback(async (
-    fieldId: string, 
-    plotData: Omit<CreatePlotDto, 'fieldId'>
-  ): Promise<Plot> => {
-    try {
-      setError(null);
-      const newPlot = await plotApi.createInField(fieldId, plotData);
-      
-      // Agregar al estado local
-      setPlots(prev => [newPlot, ...prev]);
-      
-      return newPlot;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      throw err; // Re-lanzar para que el componente pueda manejarlo
-    }
-  }, []);
-
-  /**
-   * Crear una nueva parcela (método directo)
+   * Crear un nuevo plot
    */
   const createPlot = useCallback(async (plotData: CreatePlotDto): Promise<Plot> => {
+    if (!fieldId) throw new Error('fieldId es requerido');
+    
     try {
       setError(null);
-      const newPlot = await plotApi.create(plotData);
+      const newPlot = await plotApi.create(fieldId, plotData);
       
       // Agregar al estado local
       setPlots(prev => [newPlot, ...prev]);
@@ -80,19 +60,21 @@ export function usePlots(initialFilters?: PlotFilters) {
       setError(errorMessage);
       throw err;
     }
-  }, []);
+  }, [fieldId]);
 
   /**
-   * Actualizar una parcela existente
+   * Actualizar un plot existente
    */
-  const updatePlot = useCallback(async (id: string, plotData: UpdatePlotDto): Promise<Plot> => {
+  const updatePlot = useCallback(async (plotId: string, plotData: UpdatePlotDto): Promise<Plot> => {
+    if (!fieldId) throw new Error('fieldId es requerido');
+    
     try {
       setError(null);
-      const updatedPlot = await plotApi.update(id, plotData);
+      const updatedPlot = await plotApi.update(fieldId, plotId, plotData);
       
       // Actualizar en el estado local
       setPlots(prev => prev.map(plot => 
-        plot.id === id ? updatedPlot : plot
+        plot.id === plotId ? updatedPlot : plot
       ));
       
       return updatedPlot;
@@ -101,32 +83,36 @@ export function usePlots(initialFilters?: PlotFilters) {
       setError(errorMessage);
       throw err;
     }
-  }, []);
+  }, [fieldId]);
 
   /**
-   * Eliminar una parcela (soft delete)
+   * Eliminar un plot permanentemente (hard delete)
    */
-  const deletePlot = useCallback(async (id: string): Promise<void> => {
+  const deletePlot = useCallback(async (plotId: string): Promise<void> => {
+    if (!fieldId) throw new Error('fieldId es requerido');
+    
     try {
       setError(null);
-      await plotApi.delete(id);
+      await plotApi.delete(fieldId, plotId);
       
       // Remover del estado local
-      setPlots(prev => prev.filter(plot => plot.id !== id));
+      setPlots(prev => prev.filter(plot => plot.id !== plotId));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
       throw err;
     }
-  }, []);
+  }, [fieldId]);
 
   /**
-   * Restaurar una parcela eliminada
+   * Restaurar un plot eliminado
    */
-  const restorePlot = useCallback(async (id: string): Promise<void> => {
+  const restorePlot = useCallback(async (plotId: string): Promise<void> => {
+    if (!fieldId) throw new Error('fieldId es requerido');
+    
     try {
       setError(null);
-      const restoredPlot = await plotApi.restore(id);
+      const restoredPlot = await plotApi.restore(fieldId, plotId);
       
       // Agregar de vuelta al estado local
       setPlots(prev => [restoredPlot, ...prev]);
@@ -135,78 +121,38 @@ export function usePlots(initialFilters?: PlotFilters) {
       setError(errorMessage);
       throw err;
     }
-  }, []);
+  }, [fieldId]);
 
   /**
-   * Eliminar permanentemente una parcela (hard delete)
-   * ⚠️ OPERACIÓN IRREVERSIBLE
+   * Obtener un plot por su ID
    */
-  const hardDeletePlot = useCallback(async (id: string): Promise<void> => {
+  const getPlotById = useCallback(async (plotId: string): Promise<Plot> => {
+    if (!fieldId) throw new Error('fieldId es requerido');
+    
     try {
       setError(null);
-      await plotApi.hardDelete(id);
-      
-      // Remover del estado local
-      setPlots(prev => prev.filter(plot => plot.id !== id));
+      return await plotApi.getById(fieldId, plotId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
       throw err;
     }
-  }, []);
-
-  /**
-   * Obtener una parcela por su ID
-   */
-  const getPlotById = useCallback(async (id: string): Promise<Plot> => {
-    try {
-      setError(null);
-      return await plotApi.getById(id);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  /**
-   * Obtener parcelas de un campo específico
-   */
-  const getPlotsByFieldId = useCallback(async (fieldId: string): Promise<Plot[]> => {
-    try {
-      setError(null);
-      return await plotApi.getByFieldId(fieldId);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  /**
-   * Actualizar filtros (dispara nuevo fetch)
-   */
-  const updateFilters = useCallback((newFilters: PlotFilters | undefined) => {
-    setFilters(newFilters);
-  }, []);
+  }, [fieldId]);
 
   return {
     // Estado
     plots,
     loading,
     error,
-    filters,
+    fieldId,
     
     // Métodos
     fetchPlots,
     createPlot,
-    createPlotInField,
     updatePlot,
     deletePlot,
     restorePlot,
-    hardDeletePlot,
     getPlotById,
-    getPlotsByFieldId,
-    updateFilters,
+    setPlots, // Exponer setPlots para actualizaciones locales
   };
 }

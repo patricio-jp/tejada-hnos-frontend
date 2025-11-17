@@ -1,6 +1,21 @@
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import type { Plot } from "@/lib/map-types";
+/**
+ * PlotDetailsSheet - Panel lateral con detalles de la parcela
+ */
+
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { MapPin, Leaf, Calendar, Ruler, Edit, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import type { Plot } from '@/types/plots';
 
 interface PlotDetailsSheetProps {
   plot: Plot | null;
@@ -8,66 +23,142 @@ interface PlotDetailsSheetProps {
   onClose: () => void;
   onEdit: (plot: Plot) => void;
   onDelete: (plot: Plot) => void;
-  onEditGeometry?: (plot: Plot) => void;
 }
 
-export const PlotDetailsSheet: React.FC<PlotDetailsSheetProps> = ({
+export function PlotDetailsSheet({
   plot,
   open,
   onClose,
   onEdit,
   onDelete,
-  onEditGeometry,
-}) => (
-  <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-    <SheetContent className="z-[9999]">
-      {plot && (
-        <div className="p-4">
-          <h3 className="text-lg font-semibold mb-2">{plot.properties.name}</h3>
-          <div className="grid gap-3">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>ID</span>
-              <span>{plot.id}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Variedad</span>
-              <span>{plot.properties.variety}</span>
-            </div>
-            <div className="flex justify-between text-sm font-semibold">
-              <span>Área</span>
-              <span>{plot.properties.area ?? 0} ha</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Color</span>
-              <span className="flex items-center gap-2">
-                <span
-                  className="inline-flex h-4 w-4 rounded-full border"
-                  style={{ backgroundColor: plot.properties.color ?? "#16a34a" }}
-                />
-                <span>{plot.properties.color ?? "--"}</span>
-              </span>
+}: PlotDetailsSheetProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (!plot) return null;
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(plot);
+    setShowDeleteConfirm(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={onClose}>
+        <SheetContent className="w-[400px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{plot.name}</SheetTitle>
+            <SheetDescription>Detalles de la parcela</SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-6 mt-6">
+            {/* Card Principal */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Información</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Área */}
+                <div className="flex items-start gap-3">
+                  <Ruler className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Área</p>
+                    <p className="text-lg font-semibold">{plot.area} m²</p>
+                  </div>
+                </div>
+
+                {/* Variedad */}
+                <div className="flex items-start gap-3">
+                  <Leaf className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Variedad</p>
+                    {plot.variety ? (
+                      <Badge variant="outline">{plot.variety.name}</Badge>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Sin variedad asignada</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fecha de Plantación */}
+                {plot.datePlanted && (
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-primary mt-1" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Fecha de Plantación</p>
+                      <p className="text-sm">
+                        {new Date(plot.datePlanted).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ubicación */}
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Ubicación</p>
+                    <p className="text-xs text-muted-foreground">
+                      Tipo: {plot.location?.type || 'Desconocido'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Acciones */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  onEdit(plot);
+                  onClose();
+                }}
+                className="flex-1"
+                variant="outline"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </Button>
+              <Button
+                onClick={handleDelete}
+                className="flex-1"
+                variant="destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
             </div>
           </div>
-          <div className="grid gap-2 mt-4">
-            <Button onClick={() => onEdit(plot)}>
-              Editar datos
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => onEditGeometry?.(plot)}
-              disabled={!onEditGeometry}
-            >
-              Editar geometría
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => onDelete(plot)}
-            >
+        </SheetContent>
+      </Sheet>
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar parcela?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de eliminar la parcela "{plot.name}". Esta acción es irreversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Eliminar
-            </Button>
-          </div>
-        </div>
-      )}
-    </SheetContent>
-  </Sheet>
-);
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+export default PlotDetailsSheet;
