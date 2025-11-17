@@ -1,7 +1,7 @@
 // src/components/PlotsEditor.tsx
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import type { Field, Plot } from "@/lib/map-types";
+import type { Field } from "@/lib/map-types";
 import type { FeatureCollection, Feature, Polygon } from "geojson";
 import { computePolygonCentroid, computePolygonAreaHectares } from "@/common/utils/geometry";
 import { hexToRGBA } from "@/common/utils/color-utils";
@@ -24,8 +24,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   // Estado local del mapa (para ediciones temporales)
   // Inicializar con plots que vienen en el field, luego actualizar con los del hook
   const [plots, setPlots] = useState<any[]>(field.plots || []);
-  const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
-  const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
+  const [editingPlot, setEditingPlot] = useState<any | null>(null);
+  const [selectedPlot, setSelectedPlot] = useState<any | null>(null);
   const [newPolygon, setNewPolygon] = useState<Feature<Polygon> | null>(null); // Para capturar nuevo polígono sin guardar
   const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
   const [isSavingChanges, setIsSavingChanges] = useState(false);
@@ -114,7 +114,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         isFieldBoundary: true, // Marcador especial
       }
     } as Feature<Polygon>;
-    
+
   }, [field.id, field.name, fieldGeometry]);
 
   // Combinar el boundary del campo con los plots (memoizado)
@@ -162,7 +162,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     const area = computePolygonAreaHectares(feature.geometry.coordinates);
     
     // Guardar el polígono temporalmente y abrir diálogo de creación
-    const tempPlot: Plot = {
+    const tempPlot: any = {
       id: feature.id as string,
       name: '',
       area: area,
@@ -252,7 +252,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, [editingGeometryPlotId]);
 
   // Handler para eliminar una parcela
-  const handleDeletePlot = useCallback(async (plot: Plot) => {
+  const handleDeletePlot = useCallback(async (plot: any) => {
     try {
       await deletePlot(plot.id as string);
       setPlots((current) => current.filter((p) => p.id !== plot.id));
@@ -265,7 +265,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, [deletePlot]);
 
   // Handler para iniciar edición de geometría
-  const handleEditGeometry = useCallback((plot: Plot) => {
+  const handleEditGeometry = useCallback((plot: any) => {
     // NO cerrar el sheet - mantener el plot seleccionado para que el mapa sepa cuál editar
     setEditingGeometryPlotId(plot.id as string); // Marcar qué plot está siendo editado
     // Guardar geometría original antes de editar (para poder revertir)
