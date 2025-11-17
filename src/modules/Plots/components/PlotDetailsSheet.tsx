@@ -23,6 +23,7 @@ interface PlotDetailsSheetProps {
   onClose: () => void;
   onEdit: (plot: Plot) => void;
   onDelete: (plot: Plot) => void;
+  onEditGeometry?: (plot: Plot) => void;
 }
 
 export function PlotDetailsSheet({
@@ -31,6 +32,7 @@ export function PlotDetailsSheet({
   onClose,
   onEdit,
   onDelete,
+  onEditGeometry,
 }: PlotDetailsSheetProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -115,21 +117,32 @@ export function PlotDetailsSheet({
             </Card>
 
             {/* Acciones */}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <Button
                 onClick={() => {
                   onEdit(plot);
                   onClose();
                 }}
-                className="flex-1"
+                className="w-full"
                 variant="outline"
               >
                 <Edit className="mr-2 h-4 w-4" />
-                Editar
+                Editar Detalles
+              </Button>
+              <Button
+                onClick={() => {
+                  onEditGeometry?.(plot);
+                  onClose(); // Cerrar el sheet cuando se clickea editar geometría
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                <MapPin className="mr-2 h-4 w-4" />
+                Editar Geometría
               </Button>
               <Button
                 onClick={handleDelete}
-                className="flex-1"
+                className="w-full"
                 variant="destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
