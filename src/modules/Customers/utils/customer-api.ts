@@ -36,7 +36,7 @@ import type {
   CreateCustomerDto, 
   UpdateCustomerDto,
   CustomerFilters 
-} from '../types/customer';
+} from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3ZGIxNjdiNy03NDQ3LTQ0YTUtYjM0Yi1lNGIzNmQ0ZTRjMjMiLCJlbWFpbCI6ImFkbWluQHRlamFkYWhub3MuY29tIiwicm9sZSI6IkFETUlOIiwibmFtZSI6IkFkbWluIiwibGFzdE5hbWUiOiJQcmluY2lwYWwiLCJpYXQiOjE3NjI0NjcyMjksImV4cCI6MTc2MjQ3MDgyOX0.MUjRRj7CEVaoYKnn_l3nYr8T3EF4UsgChXWOX4LDRwg';

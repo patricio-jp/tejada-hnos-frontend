@@ -1,10 +1,9 @@
 // src/modules/Purchases/hooks/useInputs.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Input } from '../types';
+import type { Input } from '@/types';
 import useAuth from '@/modules/Auth/hooks/useAuth';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import apiClient from '@/lib/api-client';
 
 export function useInputs() {
   const [inputs, setInputs] = useState<Input[]>([]);
@@ -22,20 +21,7 @@ export function useInputs() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/inputs`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('useInputs: Error response', errorText);
-        throw new Error('Error al cargar los insumos');
-      }
-
-      const { data } = await response.json();
+      const data = await apiClient.get<Input[]>('/inputs', { token: accessToken });
       setInputs(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

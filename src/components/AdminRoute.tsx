@@ -2,6 +2,9 @@
 
 import useAuth from "@/modules/Auth/hooks/useAuth";
 import { Navigate } from "react-router";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ShieldAlert } from "lucide-react";
 
 interface AdminRouteProps {
   children: React.ReactElement;
@@ -26,23 +29,32 @@ export function AdminRoute({ children }: AdminRouteProps) {
   // Si no es ADMIN, redirigir a la página principal o mostrar mensaje
   if (userRole !== 'ADMIN') {
     return (
-      <div className="container mx-auto py-10">
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-destructive">Acceso Denegado</h1>
-            <p className="text-muted-foreground mt-2">
-              No tienes permisos para acceder a esta página.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Esta sección solo está disponible para administradores.
-            </p>
-          </div>
-          <a 
-            href="/" 
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-          >
-            Volver al Inicio
-          </a>
+      <div className="container mx-auto py-10 px-4">
+        <div className="flex flex-col items-center justify-center min-h-[500px]">
+          <Card className="max-w-md w-full">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-destructive/10 p-3">
+                  <ShieldAlert className="h-8 w-8 text-destructive" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl">Acceso Restringido</CardTitle>
+              <CardDescription className="text-base mt-2">
+                Esta función requiere permisos de administrador
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Solo los administradores pueden acceder a esta sección.
+                Si necesitas realizar esta acción, contacta a tu administrador.
+              </p>
+              <Button asChild className="w-full">
+                <a href="/dashboard">
+                  Volver al Dashboard
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

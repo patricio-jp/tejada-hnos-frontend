@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '../types/variety';
+import type { Variety, CreateVarietyDto, UpdateVarietyDto } from '@/types';
 
 interface VarietyFormProps {
   variety?: Variety;

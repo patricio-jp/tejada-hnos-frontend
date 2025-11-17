@@ -49,8 +49,6 @@ Customers/
 │   └── useCustomers.ts       # Hook con gestión de filtros
 ├── pages/
 │   └── CustomersPage.tsx     # Página principal con múltiples diálogos
-├── types/
-│   └── customer.ts           # Tipos e interfaces de filtros
 ├── utils/
 │   └── customer-api.ts       # Cliente API con endpoints completos
 └── README.md

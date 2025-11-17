@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { ArrowLeft, Plus, Trash2, Save, Package, DollarSign, ShoppingCart, AlertCircle } from "lucide-react";
-import type { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from "../types";
+import type { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from "@/types";
 import { formatCurrency } from "@/lib/currency";
 
 interface OrderItem {
@@ -88,7 +88,7 @@ export default function PurchaseOrderFormPage() {
             setItems(
               order.details.map((detail) => ({
                 id: detail.id, // Guardar el ID del detalle para la actualización
-                inputId: detail.input?.id || detail.inputId,
+                inputId: detail.input.id,
                 quantity: detail.quantity,
                 unitPrice: detail.unitPrice,
               }))
@@ -149,25 +149,12 @@ export default function PurchaseOrderFormPage() {
       return;
     }
 
-    const dto: CreatePurchaseOrderDto = {
-      supplierId,
-      status: "PENDIENTE",
-      totalAmount,
-      details: validItems.map((item) => ({
-        inputId: item.inputId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-    };
-
     let success = false;
 
     if (isEditing && id) {
       // Para actualización, necesitamos el DTO con los IDs de los detalles
       const updateDto: UpdatePurchaseOrderDto = {
         supplierId,
-        status: "PENDIENTE",
-        totalAmount,
         details: validItems.map((item) => ({
           id: item.id!, // El ID del detalle debe existir al editar
           inputId: item.inputId, // Incluir inputId para items nuevos
@@ -178,6 +165,15 @@ export default function PurchaseOrderFormPage() {
       const result = await updatePurchaseOrder(id, updateDto);
       success = !!result;
     } else {
+      const dto: CreatePurchaseOrderDto = {
+        supplierId,
+        details: validItems.map((item) => ({
+          inputId: item.inputId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      };
+
       const result = await createPurchaseOrder(dto);
       success = !!result;
     }

@@ -5,7 +5,7 @@ import type {
   CreateCustomerDto, 
   UpdateCustomerDto,
   CustomerFilters 
-} from '../types/customer';
+} from '@/types';
 
 export function useCustomers(initialFilters?: CustomerFilters) {
   const [customers, setCustomers] = useState<Customer[]>([]);

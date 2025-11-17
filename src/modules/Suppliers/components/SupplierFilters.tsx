@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X } from 'lucide-react';
-import type { SupplierFilters as SupplierFiltersType } from '../types/supplier';
+import type { SupplierFilters as SupplierFiltersType } from '@/types';
 
 interface SupplierFiltersProps {
   filters: SupplierFiltersType;

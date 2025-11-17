@@ -5,7 +5,7 @@ import { SuppliersTable } from '../components/SuppliersTable';
 import { SupplierDialog } from '../components/SupplierDialog';
 import { SupplierFilters } from '../components/SupplierFilters';
 import { useSuppliers } from '../hooks/useSuppliers';
-import type { Supplier } from '../types/supplier';
+import type { Supplier } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,

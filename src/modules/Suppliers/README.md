@@ -14,8 +14,6 @@ Suppliers/
 │   └── useSuppliers.ts       # Hook personalizado para operaciones CRUD
 ├── pages/
 │   └── SuppliersPage.tsx     # Página principal del módulo
-├── types/
-│   └── supplier.ts           # Tipos TypeScript
 └── utils/
     └── supplier-api.ts       # Funciones para llamadas a la API
 ```
