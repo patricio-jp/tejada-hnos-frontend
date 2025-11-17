@@ -149,13 +149,13 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
 
   // Handler para cuando se selecciona una parcela en el mapa
   const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
-    if (feature && index !== null) {
-      // El índice 0 es el field boundary, así que restamos 1
-      const plotIndex = index - 1;
-      if (plotIndex >= 0 && plotIndex < plots.length) {
-        const plot = plots[plotIndex];
+    if (feature && feature.id) {
+      // Buscar el plot por ID en lugar de por índice
+      const plot = plots.find(p => p.id === feature.id);
+      if (plot) {
         setSelectedPlot(plot);
-        console.log('Parcela seleccionada:', plot.properties?.name || plot.id);
+        const plotName = (plot as any).name || (plot as any).properties?.name || plot.id;
+        console.log('Parcela seleccionada:', plotName);
       }
     } else {
       setSelectedPlot(null);
@@ -194,35 +194,85 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     if (!editingPlot) return;
 
     try {
-      // Convertir del formato de map-types al formato de API
-      await updatePlot(editingPlot.id as string, {
-        name: editingPlot.properties.name,
-        area: editingPlot.properties.area || 0,
-        varietyId: editingPlot.properties.variety,
-        geometry: editingPlot.geometry,
-      });
+      setIsSavingChanges(true);
+      
+      console.log('editingPlot completo:', editingPlot);
+      console.log('editingPlot.id:', (editingPlot as any).id);
+      console.log('typeof editingPlot.id:', typeof (editingPlot as any).id);
+      console.log('editingPlot.properties?.id:', (editingPlot as any).properties?.id);
+      
+      const plotId = (editingPlot as any).id;
+      if (!plotId || typeof plotId !== 'string') {
+        throw new Error(`Plot ID inválido. tipo: ${typeof plotId}, valor: ${plotId}`);
+      }
+      
+      // Manejar ambas estructuras de plot
+      const plotName = (editingPlot as any).properties?.name || (editingPlot as any).name;
+      let plotArea = (editingPlot as any).properties?.area || (editingPlot as any).area || 0;
+      // Convertir a número si es string
+      plotArea = typeof plotArea === 'string' ? parseFloat(plotArea) : plotArea;
+      
+      // Para variety, extraer el ID si es un objeto, o usar el valor directo si es string
+      // Buscar en estas ubicaciones: varietyId, variety (para compatibilidad)
+      let plotVarietyId = (editingPlot as any).varietyId || 
+                          (editingPlot as any).properties?.varietyId ||
+                          (editingPlot as any).variety || 
+                          (editingPlot as any).properties?.variety;
+      
+      // Si es un objeto (la variedad completa), extraer el ID
+      if (typeof plotVarietyId === 'object' && plotVarietyId?.id) {
+        plotVarietyId = plotVarietyId.id;
+      } else if (typeof plotVarietyId === 'object') {
+        // Si es un objeto pero no tiene id, usar null
+        plotVarietyId = null;
+      }
+      
+      console.log('Actualizando plot:', { plotId, plotName, plotArea, plotVarietyId });
+      console.log('editingPlot.varietyId:', (editingPlot as any).varietyId);
+      console.log('editingPlot completo al guardar:', editingPlot);
+      
+      const updatePayload = {
+        name: plotName,
+        area: plotArea,
+        varietyId: plotVarietyId || undefined,
+      };
+      console.log('Payload a enviar:', updatePayload);
+      
+      // Llamar a updatePlot con los parámetros correctos
+      await updatePlot(plotId, updatePayload);
 
-      setPlots((current) =>
-        current.map((plot) =>
-          plot.id === editingPlot.id ? editingPlot : plot
-        )
-      );
-
+      // Cerrar ambos diálogos después de guardar exitosamente
+      setSelectedPlot(null);
       setEditingPlot(null);
+      
+      // Mostrar mensaje de éxito (opcional)
+      console.log('Plot actualizado exitosamente');
     } catch (error) {
       console.error('Error saving plot details:', error);
+    } finally {
+      setIsSavingChanges(false);
     }
   }, [editingPlot, updatePlot]);
 
   // Función para obtener el color del polígono
-  const getPlotColor = useCallback((feature: Feature, isSelected: boolean): [number, number, number, number] => {
+  const getPlotColor = useCallback((feature: Feature | null, isSelected: boolean): [number, number, number, number] => {
+    // Verificación defensiva
+    if (!feature) {
+      return [100, 150, 100, 100]; // Verde por defecto
+    }
+    
     // Si es el field boundary, transparente (ya está manejado en InteractiveMap)
     if (feature.properties?.isFieldBoundary) {
       return [0, 0, 0, 0];
     }
     
+    // Verificar si este feature corresponde al plot seleccionado
+    const featureId = feature.id || feature.properties?.id || feature.properties?.plotId;
+    const selectedPlotId = selectedPlot?.id;
+    const isCurrentlySelected = isSelected || (featureId && selectedPlotId && featureId === selectedPlotId);
+    
     // Si está seleccionado, usar color rojo semi-transparente
-    if (isSelected) {
+    if (isCurrentlySelected) {
       return [255, 100, 100, 120];
     }
     
@@ -233,7 +283,7 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     
     // Color por defecto (azul)
     return [0, 100, 255, 100];
-  }, []);
+  }, [selectedPlot]);
 
   // Handler para cuando cambia el modo del mapa
   const handleModeChange = useCallback((newMode: 'view' | 'drawPolygon' | 'select' | 'edit') => {

@@ -91,11 +91,11 @@ export const plotApi = {
   },
 
   /**
-   * Obtener un plot por su ID
+   * Obtener un plot por su ID (endpoint directo sin fieldId)
    */
-  async getById(fieldId: string, plotId: string): Promise<Plot> {
+  async getById(plotId: string): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.get<Plot>(`/fields/${fieldId}/plots/${plotId}`);
+      return apiClient.get<Plot>(`/plots/${plotId}`);
     });
   },
 
@@ -112,27 +112,29 @@ export const plotApi = {
   },
 
   /**
-   * Actualizar un plot existente
+   * Actualizar un plot existente (usando endpoint directo /plots/:plotId)
    */
-  async update(fieldId: string, plotId: string, data: UpdatePlotDto): Promise<Plot> {
+  async update(plotId: string, data: UpdatePlotDto): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.put<Plot>(`/fields/${fieldId}/plots/${plotId}`, data);
+      const url = `/plots/${plotId}`;
+      console.log('Haciendo PUT a:', url, 'con data:', data);
+      return apiClient.put<Plot>(url, data);
     }, 1);
   },
 
   /**
    * Eliminar un plot permanentemente (hard delete)
    */
-  async delete(fieldId: string, plotId: string): Promise<void> {
-    return apiClient.delete<void>(`/fields/${fieldId}/plots/${plotId}/permanent`);
+  async delete(plotId: string): Promise<void> {
+    return apiClient.delete<void>(`/plots/${plotId}/permanent`);
   },
 
   /**
    * Restaurar un plot eliminado
    */
-  async restore(fieldId: string, plotId: string): Promise<Plot> {
+  async restore(plotId: string): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.patch<Plot>(`/fields/${fieldId}/plots/${plotId}/restore`, {});
+      return apiClient.patch<Plot>(`/plots/${plotId}/restore`, {});
     }, 1);
   },
 };
