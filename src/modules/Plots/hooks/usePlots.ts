@@ -69,11 +69,9 @@ export function usePlots(fieldId: string) {
    * Actualizar un plot existente
    */
   const updatePlot = useCallback(async (plotId: string, plotData: UpdatePlotDto): Promise<Plot> => {
-    if (!fieldId) throw new Error('fieldId es requerido');
-    
     try {
       setError(null);
-      const updatedPlot = await plotApi.update(fieldId, plotId, plotData);
+      const updatedPlot = await plotApi.update(plotId, plotData);
       
       // Actualizar en el estado local
       setPlots(prev => prev.map(plot => 
@@ -86,17 +84,15 @@ export function usePlots(fieldId: string) {
       setError(errorMessage);
       throw err;
     }
-  }, [fieldId]);
+  }, []);
 
   /**
    * Eliminar un plot permanentemente (hard delete)
    */
   const deletePlot = useCallback(async (plotId: string): Promise<void> => {
-    if (!fieldId) throw new Error('fieldId es requerido');
-    
     try {
       setError(null);
-      await plotApi.delete(fieldId, plotId);
+      await plotApi.delete(plotId);
       
       // Remover del estado local
       setPlots(prev => prev.filter(plot => plot.id !== plotId));
@@ -105,17 +101,15 @@ export function usePlots(fieldId: string) {
       setError(errorMessage);
       throw err;
     }
-  }, [fieldId]);
+  }, []);
 
   /**
    * Restaurar un plot eliminado
    */
   const restorePlot = useCallback(async (plotId: string): Promise<void> => {
-    if (!fieldId) throw new Error('fieldId es requerido');
-    
     try {
       setError(null);
-      const restoredPlot = await plotApi.restore(fieldId, plotId);
+      const restoredPlot = await plotApi.restore(plotId);
       
       // Agregar de vuelta al estado local
       setPlots(prev => [restoredPlot, ...prev]);
@@ -124,23 +118,21 @@ export function usePlots(fieldId: string) {
       setError(errorMessage);
       throw err;
     }
-  }, [fieldId]);
+  }, []);
 
   /**
    * Obtener un plot por su ID
    */
   const getPlotById = useCallback(async (plotId: string): Promise<Plot> => {
-    if (!fieldId) throw new Error('fieldId es requerido');
-    
     try {
       setError(null);
-      return await plotApi.getById(fieldId, plotId);
+      return await plotApi.getById(plotId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       setError(errorMessage);
       throw err;
     }
-  }, [fieldId]);
+  }, []);
 
   return {
     // Estado

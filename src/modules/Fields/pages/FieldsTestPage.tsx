@@ -158,9 +158,9 @@ export default function FieldsTestPage() {
       totalTests++;
       if (await runTest(
         'get-plot-by-id',
-        `GET /fields/${fields[0].id}/plots/${plots[0].id} - Obtener parcela específica`,
+        `GET /plots/${plots[0].id} - Obtener parcela específica`,
         async () => {
-          const data = await plotApi.getById(fields[0].id, plots[0].id);
+          const data = await plotApi.getById(plots[0].id);
           addLog(`   📝 Parcela: ${data.name}`);
           addLog(`   📍 Área: ${data.area}`);
           return data;

@@ -1,14 +1,16 @@
 // src/common/utils/plot-map-utils.ts
 
 import type { FeatureCollection, Feature, Polygon } from 'geojson';
-import type { Plot } from '@/lib/map-types';
+import type { Plot as BackendPlot } from '@/types/plots';
+import type { Plot as MapPlot } from '@/lib/map-types';
 import { computePolygonAreaHectares } from './geometry';
 
 /**
  * Convierte un array de Plots a FeatureCollection para usar con InteractiveMap
- * Maneja tanto plots del backend (con location) como del editor (con geometry)
+ * Maneja tanto plots del backend (@/types/plots con location) 
+ * como del editor (@/lib/map-types con geometry)
  */
-export function plotsToFeatureCollection(plots: Plot[]): FeatureCollection {
+export function plotsToFeatureCollection(plots: (BackendPlot | MapPlot | any)[]): FeatureCollection {
   const features: Feature<Polygon>[] = plots
     .filter(plot => {
       // Solo incluir plots que tengan geometría
@@ -19,13 +21,23 @@ export function plotsToFeatureCollection(plots: Plot[]): FeatureCollection {
       // Determinar la geometría: puede venir como 'geometry' (editor) o 'location' (backend)
       const geometry = (plot as any).geometry || (plot as any).location;
       
+      // Obtener el nombre desde diferentes ubicaciones posibles
+      const plotName = (plot as any).name || (plot as any).properties?.name || `Parcela ${plot.id}`;
+      
+      // Obtener el ID
+      const plotId = (plot as any).id || (plot as Feature)?.id;
+      
       return {
         type: 'Feature',
-        id: plot.id,
+        id: plotId,
         geometry: geometry as Polygon,
         properties: {
-          ...plot.properties,
-          plotId: plot.id,
+          name: plotName,
+          variety: (plot as any).properties?.variety || (plot as any).variety?.name || 'Sin asignar',
+          area: (plot as any).area || 0,
+          plotId: plotId,
+          // Preservar otras propiedades si existen
+          ...(plot as any).properties,
         }
       };
     });
@@ -37,29 +49,34 @@ export function plotsToFeatureCollection(plots: Plot[]): FeatureCollection {
 }
 
 /**
- * Convierte un FeatureCollection de vuelta a Plots
+ * Convierte un FeatureCollection de vuelta a Plots (tipo backend)
  */
 export function featureCollectionToPlots(
   featureCollection: FeatureCollection,
-  existingPlots: Plot[]
-): Plot[] {
+  existingPlots: BackendPlot[]
+): BackendPlot[] {
   return featureCollection.features.map((feature) => {
     const plotId = feature.id as string | number;
     const existingPlot = existingPlots.find(p => p.id === plotId);
     
-    const coords = (feature.geometry as Polygon).coordinates as number[][][];
-    const area = computePolygonAreaHectares(coords);
+    if (!existingPlot) {
+      // Si no existe el plot, crear uno nuevo
+      return {
+        id: plotId as string,
+        name: feature.properties?.name || 'Parcela sin nombre',
+        area: feature.properties?.area || 0,
+        fieldId: '',
+        location: feature.geometry,
+        varietyId: undefined,
+      } as BackendPlot;
+    }
     
+    // Actualizar la geometría del plot existente
     return {
-      type: 'Feature',
-      id: plotId,
-      geometry: feature.geometry as Polygon,
-      properties: {
-        name: feature.properties?.name || existingPlot?.properties?.name || 'Parcela sin nombre',
-        variety: feature.properties?.variety || existingPlot?.properties?.variety || 'Sin asignar',
-        color: feature.properties?.color || existingPlot?.properties?.color || '#16a34a',
-        area,
-      }
-    } as Plot;
+      ...existingPlot,
+      location: feature.geometry,
+      area: feature.properties?.area || existingPlot.area,
+      name: feature.properties?.name || existingPlot.name,
+    };
   });
 }
