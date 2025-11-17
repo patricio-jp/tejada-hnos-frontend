@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Package, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, ClipboardList, Package, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, Wheat } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -74,6 +74,18 @@ export const MENUS_MAIN: MenuItem[] = [
         {
           title: "Inventario de insumos",
           url: "/inputs",
+        },
+      ],
+    },
+    {
+      title: "Cosecha",
+      url: "/harvesting",
+      icon: Wheat,
+      roles: ["ADMIN", "CAPATAZ"],
+      items: [
+        {
+          title: "Gestión de lotes",
+          url: "/harvesting",
         },
       ],
     },
