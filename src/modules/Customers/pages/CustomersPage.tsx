@@ -92,7 +92,7 @@ export default function CustomersPage() {
       
       await recalculateTotalSpent(customer.id);
       // TODO: Mostrar toast de éxito
-    } catch (_err) {
+    } catch (err) {
       // TODO: Mostrar toast de error
     } finally {
       // Quitar marca de "recalculando"

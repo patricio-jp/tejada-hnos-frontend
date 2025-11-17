@@ -102,7 +102,7 @@ export default function SuppliersPage() {
       
       await recalculateTotalSupplied(supplier.id);
       // TODO: Mostrar toast de éxito
-    } catch (_err) {
+    } catch (err) {
       // TODO: Mostrar toast de error
     } finally {
       // Quitar marca de "recalculando"
