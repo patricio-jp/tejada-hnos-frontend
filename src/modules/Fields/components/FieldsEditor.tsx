@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PenTool, Loader2 } from "lucide-react";
 import { useFields } from "../hooks/useFields";
 import type { CreateFieldDto, UpdateFieldDto } from "../utils/field-api";
+import { usePlots } from "@/modules/Plots/hooks/usePlots";
 
 interface FieldsEditorProps {
   fields: Field[];
@@ -23,6 +24,8 @@ interface FieldsEditorProps {
 
 export function FieldsEditor({ fields }: FieldsEditorProps) {
   const { createField, updateField, deleteField, loading: apiLoading } = useFields();
+  const [selectedFieldIdForPlots, setSelectedFieldIdForPlots] = useState<string | null>(null);
+  const { plots: selectedFieldPlots } = usePlots(selectedFieldIdForPlots || '');
   
   // Estado local del mapa (para ediciones temporales)
   const [localFields, setLocalFields] = useState<Field[]>(fields);
@@ -45,6 +48,13 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
   useEffect(() => {
     setLocalFields(fields);
   }, [fields]);
+
+  // Actualizar selectedField con los plots cargados
+  useEffect(() => {
+    if (selectedField && selectedFieldPlots && selectedFieldPlots.length > 0) {
+      setSelectedField(prev => prev ? { ...prev, plots: selectedFieldPlots as any } : null);
+    }
+  }, [selectedFieldPlots]);
 
   // Convertir fields a FeatureCollection para el mapa (memoizado para evitar recreaciones innecesarias)
   const mapData = useMemo(() => fieldsToFeatureCollection(localFields), [localFields]);
@@ -80,11 +90,14 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
       const field = localFields[index];
       if (field) {
         setSelectedField(field);
+        // Cargar plots de este campo
+        setSelectedFieldIdForPlots(field.id);
         const fieldName = field.name || field.boundary?.properties?.name || field.id;
         console.log('Campo seleccionado:', fieldName);
       }
     } else {
       setSelectedField(null);
+      setSelectedFieldIdForPlots(null);
     }
   }, [localFields]);
 
