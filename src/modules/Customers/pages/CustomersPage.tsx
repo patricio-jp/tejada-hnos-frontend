@@ -92,7 +92,7 @@ export default function CustomersPage() {
       
       await recalculateTotalSpent(customer.id);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
     } finally {
       // Quitar marca de "recalculando"
@@ -118,10 +118,10 @@ export default function CustomersPage() {
       setDeleteDialogOpen(false);
       setCustomerToDelete(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
       // NO cerrar el dialog para que el usuario pueda reintentar
-      console.error('Error al eliminar cliente:', err);
+      console.error('Error al eliminar cliente:', _err);
     } finally {
       setIsDeleting(false);
     }
@@ -141,10 +141,10 @@ export default function CustomersPage() {
       setRestoreDialogOpen(false);
       setCustomerToRestore(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
       // NO cerrar el dialog para que el usuario pueda reintentar
-      console.error('Error al restaurar cliente:', err);
+      console.error('Error al restaurar cliente:', _err);
     } finally {
       setIsRestoring(false);
     }
@@ -165,10 +165,10 @@ export default function CustomersPage() {
       setHardDeleteDialogOpen(false);
       setCustomerToHardDelete(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error con mensaje claro
       // NO cerrar el dialog para que el usuario pueda reintentar o cancelar
-      console.error('Error al eliminar permanentemente:', err);
+      console.error('Error al eliminar permanentemente:', _err);
     } finally {
       setIsHardDeleting(false);
     }
