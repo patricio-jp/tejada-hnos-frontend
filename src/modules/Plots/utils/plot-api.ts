@@ -5,7 +5,7 @@
  * - Timeout de 30 segundos
  * - Retry logic con exponential backoff
  * - Manejo robusto de errores
- * - Soporte para creación nested en /fields/:fieldId/plots
+ * - Integración con apiClient centralizado
  */
 
 import { apiClient } from '@/lib/api-client';
@@ -24,97 +24,53 @@ const RETRY_DELAYS = [1000, 2000]; // ms
 export interface CreatePlotDto {
   name: string;
   area: number;
-  fieldId: string; // ID del campo al que pertenece
-  varietyId?: string; // ID de la variedad (opcional)
-  datePlanted?: string; // Fecha en formato ISO
   location: {
     type: 'Polygon';
     coordinates: number[][][];
   };
+  varietyId?: string;
+  datePlanted?: string; // ISO 8601
+  fieldId: string; // Del URL params
 }
 
 export interface UpdatePlotDto {
   name?: string;
   area?: number;
-  varietyId?: string | null; // Puede ser null para desasignar
-  datePlanted?: string | null;
   location?: {
     type: 'Polygon';
     coordinates: number[][][];
   };
+  varietyId?: string | null;
+  datePlanted?: string | null;
 }
 
 /**
- * Filtros para búsqueda de Plots
- */
-export interface PlotFilters {
-  fieldId?: string;
-  varietyId?: string;
-  minArea?: number;
-  maxArea?: number;
-}
-
-/**
- * Helper para construir query string desde filtros
- */
-function buildQueryString(filters?: PlotFilters): string {
-  if (!filters) return '';
-  
-  const params = new URLSearchParams();
-  
-  if (filters.fieldId) params.append('fieldId', filters.fieldId);
-  if (filters.varietyId) params.append('varietyId', filters.varietyId);
-  if (filters.minArea) params.append('minArea', filters.minArea.toString());
-  if (filters.maxArea) params.append('maxArea', filters.maxArea.toString());
-  
-  const query = params.toString();
-  return query ? `?${query}` : '';
-}
-
-/**
- * Helper para realizar fetch con retry y timeout
+ * Helper para reintentar con exponential backoff
  */
 async function fetchWithRetry<T>(
-  fetcher: () => Promise<T>,
+  fn: () => Promise<T>,
   retries: number = MAX_RETRIES
 ): Promise<T> {
-  let lastError: Error | null = null;
+  let lastError: any;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
-    if (attempt > 0) {
-      const delay = RETRY_DELAYS[attempt - 1] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
     try {
-      const result = await fetcher();
-      clearTimeout(timeoutId);
-      return result;
+      return await Promise.race([
+        fn(),
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
+        ),
+      ]);
     } catch (error) {
-      clearTimeout(timeoutId);
-      lastError = error as Error;
-
-      // No reintentar en errores de validación o lógica
-      if (error instanceof Error) {
-        const message = error.message.toLowerCase();
-        if (
-          message.includes('validación') ||
-          message.includes('no fue encontrado') ||
-          message.includes('no existe') ||
-          message.includes('autenticación') ||
-          message.includes('autorización')
-        ) {
-          throw error; // No reintentar
-        }
-      }
+      lastError = error;
 
       // Si es el último intento, lanzar el error
       if (attempt === retries) {
         throw lastError;
       }
+
+      // Esperar antes de reintentar
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
     }
   }
 
@@ -126,86 +82,57 @@ async function fetchWithRetry<T>(
  */
 export const plotApi = {
   /**
-   * Obtener todas las parcelas con filtros opcionales
+   * Obtener todos los plots de un campo
    */
-  async getAll(filters?: PlotFilters): Promise<Plot[]> {
+  async getAllByField(fieldId: string): Promise<Plot[]> {
     return fetchWithRetry(async () => {
-      const queryString = buildQueryString(filters);
-      return apiClient.get<Plot[]>(`/plots${queryString}`);
+      return apiClient.get<Plot[]>(`/fields/${fieldId}/plots`);
     });
   },
 
   /**
-   * Obtener una parcela por su ID
+   * Obtener un plot por su ID
    */
-  async getById(id: string): Promise<Plot> {
+  async getById(fieldId: string, plotId: string): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.get<Plot>(`/plots/${id}`);
+      return apiClient.get<Plot>(`/fields/${fieldId}/plots/${plotId}`);
     });
   },
 
   /**
-   * Crear una nueva parcela en un campo específico (nested route)
-   * Usa el endpoint POST /fields/:fieldId/plots
+   * Crear un nuevo plot
    */
-  async createInField(fieldId: string, data: Omit<CreatePlotDto, 'fieldId'>): Promise<Plot> {
+  async create(fieldId: string, data: CreatePlotDto): Promise<Plot> {
     return fetchWithRetry(async () => {
-      // El backend espera que fieldId venga en el body también
-      const payload = { ...data, fieldId };
-      return apiClient.post<Plot>(`/fields/${fieldId}/plots`, payload);
+      return apiClient.post<Plot>(`/fields/${fieldId}/plots`, {
+        ...data,
+        fieldId, // Asegurar que fieldId esté en el body
+      });
     }, 1); // Solo 1 reintento para operaciones de escritura
   },
 
   /**
-   * Crear una nueva parcela (endpoint directo)
-   * Usa el endpoint POST /plots
+   * Actualizar un plot existente
    */
-  async create(data: CreatePlotDto): Promise<Plot> {
+  async update(fieldId: string, plotId: string, data: UpdatePlotDto): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.post<Plot>('/plots', data);
+      return apiClient.put<Plot>(`/fields/${fieldId}/plots/${plotId}`, data);
     }, 1);
   },
 
   /**
-   * Actualizar una parcela existente
+   * Eliminar un plot permanentemente (hard delete)
    */
-  async update(id: string, data: UpdatePlotDto): Promise<Plot> {
+  async delete(fieldId: string, plotId: string): Promise<void> {
+    return apiClient.delete<void>(`/fields/${fieldId}/plots/${plotId}/permanent`);
+  },
+
+  /**
+   * Restaurar un plot eliminado
+   */
+  async restore(fieldId: string, plotId: string): Promise<Plot> {
     return fetchWithRetry(async () => {
-      return apiClient.put<Plot>(`/plots/${id}`, data);
+      return apiClient.patch<Plot>(`/fields/${fieldId}/plots/${plotId}/restore`, {});
     }, 1);
-  },
-
-  /**
-   * Eliminar una parcela (soft delete)
-   */
-  async delete(id: string): Promise<Plot> {
-    // NO retry para delete - operación crítica
-    return apiClient.delete<Plot>(`/plots/${id}`);
-  },
-
-  /**
-   * Restaurar una parcela eliminada
-   */
-  async restore(id: string): Promise<Plot> {
-    return fetchWithRetry(async () => {
-      return apiClient.patch<Plot>(`/plots/${id}/restore`, {});
-    }, 1);
-  },
-
-  /**
-   * Eliminar permanentemente una parcela (hard delete)
-   * ⚠️ OPERACIÓN IRREVERSIBLE
-   */
-  async hardDelete(id: string): Promise<void> {
-    // NO retry para hard delete - operación crítica e irreversible
-    return apiClient.delete<void>(`/plots/${id}/permanent`);
-  },
-
-  /**
-   * Obtener todas las parcelas de un campo específico
-   * Helper que usa getAll con filtro
-   */
-  async getByFieldId(fieldId: string): Promise<Plot[]> {
-    return this.getAll({ fieldId });
   },
 };

@@ -1,6 +1,6 @@
 // src/components/PlotsEditor.tsx
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import type { Field, Plot } from "@/lib/map-types";
 import type { FeatureCollection, Feature, Polygon } from "geojson";
 import { computePolygonCentroid } from "@/common/utils/geometry";
@@ -10,43 +10,96 @@ import { plotsToFeatureCollection, featureCollectionToPlots } from "@/common/uti
 import { PlotDetailsSheet } from "./PlotDetailsSheet";
 import { PlotEditDialog } from "./PlotEditDialog";
 import { Button } from "@/components/ui/button";
-import { PenTool } from "lucide-react";
+import { PenTool, Loader2 } from "lucide-react";
+import { usePlots } from "../hooks/usePlots";
 
 interface PlotsEditorProps {
   field: Field;
 }
 
 export function PlotsEditor({ field }: PlotsEditorProps) {
-  // Inicializar plots desde el field
-  const [plots, setPlots] = useState<Plot[]>(field.plots || []);
+  const { plots: hookPlots, loading: apiLoading, createPlot, updatePlot, deletePlot } = usePlots(field.id);
+  
+  // Estado local del mapa (para ediciones temporales)
+  // Inicializar con plots que vienen en el field, luego actualizar con los del hook
+  const [plots, setPlots] = useState<any[]>(field.plots || []);
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [mapMode, setMapMode] = useState<'view' | 'drawPolygon' | 'select' | 'edit'>('select');
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
+
+  // Actualizar plots cuando el hook carga nuevos datos
+  useEffect(() => {
+    if (hookPlots && hookPlots.length > 0) {
+      setPlots(hookPlots);
+    }
+  }, [hookPlots]);
 
   // Convertir plots a FeatureCollection para el mapa (memoizado)
   const mapData = useMemo(() => plotsToFeatureCollection(plots), [plots]);
   
+  // Obtener geometría del field (buscar en diferentes ubicaciones posibles)
+  const getFieldGeometry = useCallback(() => {
+    if (field.boundary?.geometry) {
+      return field.boundary.geometry;
+    } else if ((field as any).geometry) {
+      return (field as any).geometry;
+    } else if ((field as any).location) {
+      // La geometría podría estar en 'location'
+      return (field as any).location;
+    }
+    return null;
+  }, [field]);
+
+  const fieldGeometry = getFieldGeometry();
+  
   // Calcular el centro del campo para el mapa (memoizado)
   const initialViewState = useMemo(() => {
-    // computePolygonCentroid retorna [lat, lng] pero necesitamos [lng, lat]
-    const fieldCenter = computePolygonCentroid(field.boundary.geometry.coordinates);
-    return {
-      longitude: fieldCenter[1], // lng es el segundo elemento
-      latitude: fieldCenter[0],  // lat es el primer elemento
-      zoom: 14,
-    };
-  }, [field.boundary.geometry.coordinates]);
+    if (!fieldGeometry) {
+      // Fallback a vista por defecto
+      return { longitude: -75.5, latitude: 6.0, zoom: 12 };
+    }
+
+    try {
+      const coordinates = (fieldGeometry as any).coordinates;
+      if (!coordinates || !Array.isArray(coordinates)) {
+        return { longitude: -75.5, latitude: 6.0, zoom: 12 };
+      }
+
+      const fieldCenter = computePolygonCentroid(coordinates);
+      return {
+        longitude: fieldCenter[1], // lng es el segundo elemento
+        latitude: fieldCenter[0],  // lat es el primer elemento
+        zoom: 14,
+      };
+    } catch (error) {
+      console.error('Error calculating field center:', error);
+      return { longitude: -75.5, latitude: 6.0, zoom: 12 };
+    }
+  }, [fieldGeometry]);
 
   // Crear un feature del campo para mostrarlo en el mapa (solo visualización) - memoizado
-  const fieldBoundaryFeature: Feature<Polygon> = useMemo(() => ({
-    type: 'Feature',
-    id: `field-boundary-${field.id}`,
-    geometry: field.boundary.geometry,
-    properties: {
-      ...field.boundary.properties,
-      isFieldBoundary: true, // Marcador especial
+  const fieldBoundaryFeature: Feature<Polygon> = useMemo(() => {
+    if (!fieldGeometry) {
+      // Si no hay geometría, retornar un feature vacío
+      return {
+        type: 'Feature',
+        id: `field-boundary-${field.id}`,
+        geometry: { type: 'Polygon', coordinates: [] },
+        properties: { isFieldBoundary: true }
+      } as Feature<Polygon>;
     }
-  }), [field.id, field.boundary.geometry, field.boundary.properties]);
+
+    return {
+      type: 'Feature',
+      id: `field-boundary-${field.id}`,
+      geometry: fieldGeometry as Polygon,
+      properties: {
+        name: field.name,
+        isFieldBoundary: true, // Marcador especial
+      }
+    } as Feature<Polygon>;
+  }, [field.id, field.name, fieldGeometry]);
 
   // Combinar el boundary del campo con los plots (memoizado)
   const combinedData: FeatureCollection = useMemo(() => ({
@@ -68,9 +121,23 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     
     setPlots(updatedPlots);
     
-    // Actualizar el field con los nuevos plots (esto debería propagarse al componente padre)
-    // Por ahora solo actualizamos el estado local
+    // Guardar cambios en el backend
+    handleSavePlotsChanges(updatedPlots);
   }, [plots]);
+
+  // Handler para guardar cambios en el backend
+  const handleSavePlotsChanges = useCallback(async (updatedPlots: Plot[]) => {
+    setIsSavingChanges(true);
+    try {
+      // Por ahora solo actualizamos el estado local
+      // En una implementación completa, enviaríamos cambios al backend
+      console.log('Cambios en plots guardados (local):', updatedPlots);
+    } catch (error) {
+      console.error('Error saving plot changes:', error);
+    } finally {
+      setIsSavingChanges(false);
+    }
+  }, []);
 
   // Handler para cuando se selecciona una parcela en el mapa
   const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
@@ -95,12 +162,17 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, []);
 
   // Handler para eliminar una parcela
-  const handleDeletePlot = useCallback((plot: Plot) => {
-    setPlots((current) => current.filter((p) => p.id !== plot.id));
-    setSelectedPlot(null);
-    setEditingPlot(null);
-    setMapMode('select'); // Volver al modo selección después de eliminar
-  }, []);
+  const handleDeletePlot = useCallback(async (plot: Plot) => {
+    try {
+      await deletePlot(plot.id as string);
+      setPlots((current) => current.filter((p) => p.id !== plot.id));
+      setSelectedPlot(null);
+      setEditingPlot(null);
+      setMapMode('select'); // Volver al modo selección después de eliminar
+    } catch (error) {
+      console.error('Error deleting plot:', error);
+    }
+  }, [deletePlot]);
 
   // Handler para iniciar edición de geometría
   const handleEditGeometry = useCallback((_plot: Plot) => {
@@ -110,18 +182,29 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
   }, []);
 
   // Handler para guardar detalles de la parcela editada
-  const handleSavePlotDetails = useCallback(() => {
+  const handleSavePlotDetails = useCallback(async () => {
     if (!editingPlot) return;
 
-    setPlots((current) =>
-      current.map((plot) =>
-        plot.id === editingPlot.id ? editingPlot : plot
-      )
-    );
+    try {
+      // Convertir del formato de map-types al formato de API
+      await updatePlot(editingPlot.id as string, {
+        name: editingPlot.properties.name,
+        area: editingPlot.properties.area || 0,
+        varietyId: editingPlot.properties.variety,
+        geometry: editingPlot.geometry,
+      });
 
-    //setSelectedPlot(editingPlot);
-    setEditingPlot(null);
-  }, [editingPlot]);
+      setPlots((current) =>
+        current.map((plot) =>
+          plot.id === editingPlot.id ? editingPlot : plot
+        )
+      );
+
+      setEditingPlot(null);
+    } catch (error) {
+      console.error('Error saving plot details:', error);
+    }
+  }, [editingPlot, updatePlot]);
 
   // Función para obtener el color del polígono
   const getPlotColor = useCallback((feature: Feature, isSelected: boolean): [number, number, number, number] => {
@@ -157,6 +240,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     setPlots((current) => [...current]);
   }, []);
 
+  const isLoading = apiLoading || isSavingChanges;
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -166,8 +251,13 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
         <Button
           onClick={() => setMapMode('drawPolygon')}
           variant={mapMode === 'drawPolygon' ? 'default' : 'outline'}
+          disabled={isLoading}
         >
-          <PenTool className="mr-2 h-4 w-4" />
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <PenTool className="mr-2 h-4 w-4" />
+          )}
           {mapMode === 'drawPolygon' ? 'Dibujando...' : 'Crear Nueva Parcela'}
         </Button>
       </div>
