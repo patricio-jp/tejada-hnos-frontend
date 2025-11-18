@@ -3,7 +3,7 @@
  */
 
 import { useParams, useNavigate } from 'react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,26 @@ export function PlotFieldDetailPage() {
   const [field, setField] = useState<Field | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handlePlotDeleted = useCallback((plotId: string) => {
+    setField((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        plots: current.plots?.filter((plot) => plot.id !== plotId),
+      } as Field;
+    });
+  }, []);
+
+  const handlePlotCreated = useCallback((plot: any) => {
+    setField((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        plots: [...(current.plots || []), plot],
+      } as Field;
+    });
+  }, []);
 
   useEffect(() => {
     const fetchField = async () => {
@@ -136,7 +156,13 @@ export function PlotFieldDetailPage() {
       </div>
 
       {/* Gestor de Parcelas */}
-      {field && <PlotsEditor field={field} />}
+      {field && (
+        <PlotsEditor
+          field={field}
+          onPlotDeleted={handlePlotDeleted}
+          onPlotCreated={handlePlotCreated}
+        />
+      )}
     </div>
   );
 }
