@@ -127,22 +127,31 @@ export function PlotsEditor({ field, onPlotDeleted, onPlotCreated }: PlotsEditor
 
   // Handler para cuando cambia la data del mapa
   const handleMapDataChange = useCallback((featureCollection: FeatureCollection) => {
+    console.log('🗺️ [handleMapDataChange] Recibiendo cambios del mapa');
+    console.log('🗺️ Total features:', featureCollection.features.length);
+    
     // Filtrar solo los plots (excluir el field boundary)
     const plotFeatures = featureCollection.features.filter(
       f => !f.properties?.isFieldBoundary
     );
+    
+    console.log('🗺️ Plot features (sin boundary):', plotFeatures.length);
+    console.log('🗺️ Plots actuales en estado:', plots.length);
     
     const updatedPlots = featureCollectionToPlots(
       { type: 'FeatureCollection', features: plotFeatures },
       plots
     );
     
+    console.log('🗺️ Plots después de conversión:', updatedPlots.length);
+    
     setPlots(updatedPlots);
     
     // Si estamos editando geometría, guardar los datos editados en ref para usarlos después
     if (editingGeometryPlotId) {
       editedGeometryData.current = featureCollection;
-      console.log('🔄 Datos de geometría actualizados en ref:', featureCollection);
+      console.log('💾 [IMPORTANTE] Guardando geometría editada en ref para plotId:', editingGeometryPlotId);
+      console.log('💾 Features en ref:', featureCollection.features.map(f => ({ id: f.id, plotId: f.properties?.plotId })));
     }
     
     // Si creamos un nuevo plot, abrir diálogo
@@ -273,11 +282,17 @@ export function PlotsEditor({ field, onPlotDeleted, onPlotCreated }: PlotsEditor
 
   // Handler para iniciar edición de geometría
   const handleEditGeometry = useCallback((plot: any) => {
+    console.log('✏️ [handleEditGeometry] Iniciando edición de geometría');
+    console.log('✏️ Plot a editar:', { id: plot.id, name: plot.name });
+    console.log('✏️ Geometría original:', plot.location);
+    
     // NO cerrar el sheet - mantener el plot seleccionado para que el mapa sepa cuál editar
     setEditingGeometryPlotId(plot.id as string); // Marcar qué plot está siendo editado
     // Guardar geometría original antes de editar (para poder revertir)
     originalGeometryBeforeEdit.current = plot.location;
     setMapMode('edit'); // Activar modo de edición en el mapa
+    
+    console.log('✏️ editingGeometryPlotId establecido a:', plot.id);
   }, []);
 
   // Handler cuando el usuario presiona "Guardar Geometría" en el mapa
@@ -358,6 +373,10 @@ export function PlotsEditor({ field, onPlotDeleted, onPlotCreated }: PlotsEditor
   const handleSaveGeometry = useCallback(async () => {
     if (!editingGeometryPlotId) return;
 
+    console.log('💾 [handleSaveGeometry] Iniciando guardado de geometría');
+    console.log('💾 editingGeometryPlotId:', editingGeometryPlotId);
+    console.log('💾 Plots en estado local:', plots.map(p => ({ id: p.id, name: p.name })));
+    
     setIsSavingGeometry(true);
     setShowSaveGeometryConfirm(false);
 
@@ -367,29 +386,54 @@ export function PlotsEditor({ field, onPlotDeleted, onPlotCreated }: PlotsEditor
       // Si no, usar del array plots
       let updatedLocation;
       
+      console.log('💾 editedGeometryData.current existe?', !!editedGeometryData.current);
+      
       if (editedGeometryData.current) {
         // Buscar el feature editado en el ref
         const features = editedGeometryData.current.features.filter(f => !f.properties?.isFieldBoundary);
-        const editedFeature = features.find(f => f.id === editingGeometryPlotId || f.properties?.plotId === editingGeometryPlotId);
+        console.log('💾 Features disponibles en ref:', features.map(f => ({ 
+          id: f.id, 
+          plotId: f.properties?.plotId,
+          name: f.properties?.name 
+        })));
+        
+        const editedFeature = features.find(f => {
+          const featureId = f.id || f.properties?.plotId;
+          console.log('💾 Comparando featureId:', featureId, 'con editingGeometryPlotId:', editingGeometryPlotId);
+          return featureId === editingGeometryPlotId;
+        });
+        
+        console.log('💾 Feature editado encontrado?', !!editedFeature);
+        if (editedFeature) {
+          console.log('💾 Geometría del feature:', editedFeature.geometry);
+        }
         updatedLocation = editedFeature?.geometry;
       }
       
       // Si aún no tenemos location, usar del array plots (fallback)
       if (!updatedLocation) {
+        console.log('⚠️ No se encontró geometría en ref, usando fallback desde plots array');
         const editedPlot = plots.find(p => p.id === editingGeometryPlotId);
+        console.log('⚠️ Plot encontrado en array?', !!editedPlot);
         updatedLocation = editedPlot?.location;
       }
       
       if (!updatedLocation) {
         console.error('❌ No se encontró la geometría del plot');
+        alert('Error: No se pudo obtener la geometría actualizada del plot');
         return;
       }
+
+      console.log('✅ Geometría a guardar:', updatedLocation);
 
       const editedPlot = plots.find(p => p.id === editingGeometryPlotId);
       if (!editedPlot) {
         console.error('❌ Plot no encontrado:', editingGeometryPlotId);
+        alert('Error: No se encontró el plot a actualizar');
         return;
       }
+      
+      console.log('✅ Plot completo encontrado:', { id: editedPlot.id, name: editedPlot.name });
 
       const newArea = computePolygonAreaHectares(updatedLocation.coordinates);
 
