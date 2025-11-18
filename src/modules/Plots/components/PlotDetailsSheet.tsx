@@ -159,7 +159,7 @@ export function PlotDetailsSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar parcela?</AlertDialogTitle>
             <AlertDialogDescription>
-              Estás a punto de eliminar la parcela "{plot.name}". Esta acción es irreversible.
+              Estás a punto de eliminar la parcela "{plot.name}". Podrás restaurarla posteriormente desde el historial de eliminadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

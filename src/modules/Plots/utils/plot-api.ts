@@ -135,6 +135,13 @@ export const plotApi = {
   },
 
   /**
+   * Eliminar un plot (soft delete - puede ser restaurado)
+   */
+  async softDelete(plotId: string): Promise<void> {
+    return apiClient.delete<void>(`/plots/${plotId}`);
+  },
+
+  /**
    * Restaurar un plot eliminado
    */
   async restore(plotId: string): Promise<Plot> {

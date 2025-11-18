@@ -115,6 +115,23 @@ export function usePlots(fieldId: string) {
   }, []);
 
   /**
+   * Eliminar un plot (soft delete - puede ser restaurado)
+   */
+  const softDeletePlot = useCallback(async (plotId: string): Promise<void> => {
+    try {
+      setError(null);
+      await plotApi.softDelete(plotId);
+      
+      // Remover del estado local
+      setPlots(prev => prev.filter(plot => plot.id !== plotId));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
+  /**
    * Restaurar un plot eliminado
    */
   const restorePlot = useCallback(async (plotId: string): Promise<void> => {
@@ -157,6 +174,7 @@ export function usePlots(fieldId: string) {
     createPlot,
     updatePlot,
     deletePlot,
+    softDeletePlot,
     restorePlot,
     getPlotById,
     setPlots, // Exponer setPlots para actualizaciones locales

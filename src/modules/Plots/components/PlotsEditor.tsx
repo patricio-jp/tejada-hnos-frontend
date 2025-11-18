@@ -16,10 +16,12 @@ import { usePlots } from "../hooks/usePlots";
 
 interface PlotsEditorProps {
   field: Field;
+  onPlotDeleted?: (plotId: string) => void;
+  onPlotCreated?: (plot: any) => void;
 }
 
-export function PlotsEditor({ field }: PlotsEditorProps) {
-  const { plots: hookPlots, loading: apiLoading, createPlot, updatePlot, deletePlot } = usePlots(field.id);
+export function PlotsEditor({ field, onPlotDeleted, onPlotCreated }: PlotsEditorProps) {
+  const { plots: hookPlots, loading: apiLoading, createPlot, updatePlot, deletePlot, softDeletePlot } = usePlots(field.id);
   
   // Estado local del mapa (para ediciones temporales)
   // Inicializar con plots que vienen en el field, luego actualizar con los del hook
@@ -205,6 +207,8 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
       // Agregar el plot al estado local con el ID real del backend
       setPlots((prev) => [...prev, createdPlot]);
 
+      onPlotCreated?.(createdPlot);
+
       // Limpiar estados
       setNewPolygon(null);
       setEditingPlot(null);
@@ -226,14 +230,16 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
 
   // Handler para cuando se selecciona una parcela en el mapa
   // Handler para cuando se selecciona una parcela en el mapa
-  const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
-    if (feature && index !== null) {
-      // Encontrar el plot correspondiente por índice (como en FieldsEditor)
-      const plot = plots[index];
+  const handleFeatureSelect = useCallback((feature: Feature | null, _index: number | null) => {
+    if (feature) {
+      const plotId = feature.properties?.plotId || feature.id;
+      const plot = plotId ? plots.find((p) => p.id === plotId) : null;
       if (plot) {
         setSelectedPlot(plot);
         const plotName = (plot as any).name || (plot as any).properties?.name || plot.id;
         console.log('Parcela seleccionada:', plotName);
+      } else {
+        console.warn('No se encontró parcela con id', plotId);
       }
     } else {
       // No permitir deseleccionar si estamos editando geometría
@@ -251,18 +257,19 @@ export function PlotsEditor({ field }: PlotsEditorProps) {
     }
   }, [editingGeometryPlotId]);
 
-  // Handler para eliminar una parcela
+  // Handler para eliminar una parcela (soft delete)
   const handleDeletePlot = useCallback(async (plot: any) => {
     try {
-      await deletePlot(plot.id as string);
+      await softDeletePlot(plot.id as string);
       setPlots((current) => current.filter((p) => p.id !== plot.id));
       setSelectedPlot(null);
       setEditingPlot(null);
       setMapMode('select'); // Volver al modo selección después de eliminar
+      onPlotDeleted?.(plot.id as string);
     } catch (error) {
       console.error('Error deleting plot:', error);
     }
-  }, [deletePlot]);
+  }, [softDeletePlot]);
 
   // Handler para iniciar edición de geometría
   const handleEditGeometry = useCallback((plot: any) => {
