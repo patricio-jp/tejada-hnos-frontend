@@ -386,7 +386,8 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>¿Eliminar campo?</AlertDialogTitle>
-              <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+              <AlertDialogDescription>El campo "{deletingField?.boundary?.properties?.name}" dejará de ser visible en el mapa principal, 
+              pero podrás restaurarlo más adelante si lo necesitas.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>

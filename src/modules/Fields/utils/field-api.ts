@@ -160,14 +160,12 @@ export const fieldApi = {
   },
 
   /**
-   * Eliminar un campo permanentemente (hard delete)
-   * ⚠️ OPERACIÓN IRREVERSIBLE
-   */
+   * Eliminar un campo temporalmente (soft delete)
+   * ⚠️ OPERACIÓN REVERSIBLE
+*/
   async delete(id: string): Promise<void> {
-    // NO retry para hard delete - operación crítica e irreversible
-    return apiClient.delete<void>(`/fields/${id}/permanent`);
+    return apiClient.delete<void>(`/fields/${id}`);
   },
-
   /**
    * Restaurar un campo eliminado
    */
