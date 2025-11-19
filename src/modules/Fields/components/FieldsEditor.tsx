@@ -1,3 +1,5 @@
+// src/modules/Fields/components/FieldsEditor.tsx
+
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import type { Field } from "@/lib/map-types";
@@ -13,6 +15,8 @@ import { PenTool, Loader2 } from "lucide-react";
 import { useFields } from "../hooks/useFields";
 import type { CreateFieldDto, UpdateFieldDto } from "../utils/field-api";
 import { usePlots } from "@/modules/Plots/hooks/usePlots";
+// 1. NUEVO IMPORT
+import { useUsers } from "../hooks/useUsers";
 
 interface FieldsEditorProps {
   fields: Field[];
@@ -21,6 +25,10 @@ interface FieldsEditorProps {
 
 export function FieldsEditor({ fields }: FieldsEditorProps) {
   const { createField, updateField, deleteField, loading: apiLoading } = useFields();
+  
+  // 2. OBTENER USUARIOS PARA RESOLVER NOMBRES EN EL MAPA
+  const { users } = useUsers();
+
   const [selectedFieldIdForPlots, setSelectedFieldIdForPlots] = useState<string | null>(null);
   const { plots: selectedFieldPlots } = usePlots(selectedFieldIdForPlots || '');
   
@@ -58,7 +66,12 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
     }
   }, [selectedFieldPlots, selectedField?.id]);
 
-  const mapData = useMemo(() => fieldsToFeatureCollection(localFields), [localFields]);
+  // 3. PASAR LA LISTA DE USUARIOS AL CONVERTIDOR DEL MAPA
+  // Esto permite que map-utils encuentre el nombre del manager por su ID
+  const mapData = useMemo(() => 
+    fieldsToFeatureCollection(localFields, users), 
+  [localFields, users]);
+
   const initialViewState = useMemo(() => 
     localFields.length > 0 ? calculateCenter(mapData) : undefined,
     [localFields.length, mapData]
@@ -94,38 +107,24 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
     setMapMode('select');
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // CAMBIO APLICADO: Nueva lógica de fusión para no perder datos (Capataz)
-  // ---------------------------------------------------------------------------
+  // Handler para cuando cambia la data del mapa (con fusión inteligente)
   const handleMapDataChange = useCallback((featureCollection: FeatureCollection) => {
-    // 1. Obtenemos los campos "crudos" desde el mapa (tienen geometría nueva pero faltan datos)
     const fieldsFromMap = featureCollectionToFields(featureCollection);
     
-    // 2. FUSIÓN INTELIGENTE: 
-    // Recorremos lo que viene del mapa y lo mezclamos con lo que ya tenemos en localFields
     const mergedFields = fieldsFromMap.map(mapField => {
-      // Buscamos el campo original en nuestro estado
       const originalField = localFields.find(f => f.id === mapField.id);
 
       if (originalField) {
-        // ✅ CASO CAMPO EXISTENTE:
-        // Mantenemos TODOS los datos originales (managerId, address, area, etc.)
-        // y solo actualizamos la parte visual (boundary/location).
         return {
           ...originalField, 
           boundary: mapField.boundary,
           location: mapField.boundary?.geometry || mapField.location,
-          // Mantenemos plots originales para no perder sus datos, 
-          // a menos que estemos explícitamente editando plots (que no es este caso)
           plots: originalField.plots 
         };
       }
-      
-      // CASO CAMPO NUEVO: Lo devolvemos tal cual viene del mapa
       return mapField;
     });
     
-    // 3. Detectar si se creó un campo nuevo (Lógica original)
     if (mergedFields.length > localFields.length && !editingGeometryFieldId) {
       const newField = mergedFields[mergedFields.length - 1];
       setNewFieldLocation(newField.location || newField.boundary?.geometry);
@@ -133,12 +132,10 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
       setMapMode('select');
     }
     
-    // 4. Detectar si estamos editando geometría para mostrar confirmación
     if (editingGeometryFieldId && mergedFields.length === localFields.length) {
       setShowSaveGeometryConfirm(true);
     }
     
-    // 5. Actualizamos el estado con los datos FUSIONADOS
     if (!newFieldLocation) {
         setLocalFields(mergedFields);
     }
@@ -416,3 +413,5 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
     </div>
   );
 }
+
+export default FieldsEditor;
