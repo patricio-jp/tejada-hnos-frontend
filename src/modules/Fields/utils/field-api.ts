@@ -50,6 +50,7 @@ export interface FieldFilters {
   managerId?: string;
   minArea?: number;
   maxArea?: number;
+  withDeleted?: boolean; // Soporte para soft delete
 }
 
 /**
@@ -63,7 +64,7 @@ function buildQueryString(filters?: FieldFilters): string {
   if (filters.managerId) params.append('managerId', filters.managerId);
   if (filters.minArea) params.append('minArea', filters.minArea.toString());
   if (filters.maxArea) params.append('maxArea', filters.maxArea.toString());
-  
+  if (filters.withDeleted) params.append('withDeleted', 'true');
   const query = params.toString();
   return query ? `?${query}` : '';
 }
