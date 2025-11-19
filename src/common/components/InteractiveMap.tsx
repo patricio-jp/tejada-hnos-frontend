@@ -397,13 +397,95 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
     console.log('💾 Geometría guardada');
   }, [data, onDataChange, onGeometrySaveRequested, changeMode]);
   
-  // Effect para agregar/remover event listener de mouseup global
   useEffect(() => {
     if (draggingVertex) {
       window.addEventListener('mouseup', handleMouseUp);
       return () => window.removeEventListener('mouseup', handleMouseUp);
     }
   }, [draggingVertex, handleMouseUp]);
+
+  // ------------------------------------------------------------------
+  // 🔥 NUEVO: Lógica para el Tooltip 🔥
+  // ------------------------------------------------------------------
+  const getTooltip = useCallback(({ object }: any) => {
+    // Si no hay objeto o no tiene propiedades, no mostrar nada
+    if (!object || !object.properties) return null;
+    
+    // Si estamos dibujando o arrastrando vértices, mejor no mostrar tooltip para no molestar
+    if (mode === 'drawPolygon' || draggingVertex) return null;
+
+    const props = object.properties;
+    const isField = props.type === 'field-boundary' || props.isFieldBoundary;
+    const isPlot = props.type === 'plot';
+
+    // Si es un polígono nuevo temporal sin nombre, no mostrar
+    if (props.isNewPolygon && !props.name) return null;
+
+    let html = '';
+
+    if (isField) {
+      // Tooltip para CAMPO
+      html = `
+        <div class="flex flex-col gap-1 min-w-[180px]">
+          <div class="font-bold text-sm border-b border-white/20 pb-1 mb-1 text-blue-200">
+            ${props.name || 'Campo Sin Nombre'}
+          </div>
+          <div class="text-xs flex justify-between">
+             <span class="opacity-80">Área:</span> 
+             <span class="font-mono font-semibold">${props.area ? Number(props.area).toFixed(2) : 0} ha</span>
+          </div>
+          <div class="text-xs flex justify-between">
+             <span class="opacity-80">Capataz:</span> 
+             <span class="text-yellow-200">${props.managerName || 'Sin asignar'}</span>
+          </div>
+          <div class="text-xs flex justify-between">
+             <span class="opacity-80">Parcelas:</span> 
+             <span>${props.plotCount || 0}</span>
+          </div>
+        </div>
+      `;
+    } else if (isPlot) {
+      // Tooltip para PARCELA
+      html = `
+        <div class="flex flex-col gap-1 min-w-[180px]">
+          <div class="font-bold text-sm border-b border-white/20 pb-1 mb-1 text-green-300">
+            🌱 ${props.name || 'Parcela'}
+          </div>
+          <div class="text-xs flex justify-between">
+             <span class="opacity-80">Variedad:</span> 
+             <span class="font-semibold text-white">${props.varietyName || 'Sin asignar'}</span>
+          </div>
+          <div class="text-xs flex justify-between">
+             <span class="opacity-80">Área:</span> 
+             <span class="font-mono font-semibold">${props.area ? Number(props.area).toFixed(2) : 0} ha</span>
+          </div>
+          ${props.managerName ? `
+          <div class="text-xs flex justify-between mt-1 pt-1 border-t border-white/10">
+             <span class="opacity-70">Encargado:</span> 
+             <span class="opacity-90">${props.managerName}</span>
+          </div>` : ''}
+        </div>
+      `;
+    } else {
+      // Tooltip Genérico (fallback)
+      html = `<div class="font-bold text-xs">${props.name || 'Elemento'}</div>`;
+    }
+
+    return {
+      html,
+      style: {
+        backgroundColor: '#1e293b', // Slate-800 (oscuro)
+        color: '#f8fafc', // Slate-50 (texto claro)
+        fontSize: '0.85em',
+        borderRadius: '8px',
+        padding: '10px 12px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+        zIndex: 9999,
+        maxWidth: '320px',
+        pointerEvents: 'none' // Para que no interfiera con el mouse
+      }
+    };
+  }, [mode, draggingVertex]);
 
   // --- 5. Definición de las Capas ---
   
@@ -524,7 +606,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
       id: 'edit-vertices-layer',
       data: vertices.map((p, i) => ({ 
         position: p, 
-        vertexIndex: i,
+        vertexIndex: i, 
         featureIndex: selectedFeatureIndexes[0]
       })),
       pickable: true,
@@ -761,7 +843,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     </p>
                     {mode === 'edit' && !draggingVertex && (
                       <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 space-y-1">
-                        <p>� Arrastra los puntos rojos para mover vértices</p>
+                        <p> Arrastra los puntos rojos para mover vértices</p>
                         <p>🔵 Haz clic en los puntos azules para añadir vértices</p>
                       </div>
                     )}
@@ -804,11 +886,12 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           onDragStart={handleDragStart} // Detectar inicio de drag
           onDrag={handleVertexDrag} // Actualizar posición durante drag
           onDragEnd={handleDragEnd} // Detectar fin de drag
+          getTooltip={getTooltip as any} // Tipo any para evitar conflictos
           getCursor={({ isHovering }) => {
             if (draggingVertex) return 'grabbing';
             if (isHovering && mode === 'edit') return 'grab';
             if (mode === 'drawPolygon') return 'crosshair';
-            if (mode === 'select') return 'pointer';
+            if (mode === 'select' && isHovering) return 'pointer';
             return 'default';
           }}
         >

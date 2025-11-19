@@ -1,6 +1,6 @@
 // src/modules/Fields/pages/FieldsPage.tsx
 import { useCallback, useEffect, useMemo } from "react";
-import type { Field as MapField } from "@/lib/map-types";
+import type { Field as MapField, Plot as MapPlot } from "@/lib/map-types";
 import type { Field as ApiField } from "@/types/fields";
 import { FieldsEditor } from "../components/FieldsEditor";
 import { ensureFieldColors } from "../utils/colors";
@@ -11,29 +11,55 @@ import { Loader2 } from "lucide-react";
  * Convierte campos del API al formato del mapa
  */
 function convertApiFieldsToMapFields(apiFields: ApiField[]): MapField[] {
-  return apiFields.map(field => ({
-    id: field.id,
-    name: field.name,
-    address: field.address,
-    area: field.area,
-    location: field.location,
-    managerId: field.managerId,
-    deletedAt: field.deletedAt,
-    boundary: field.location ? {
-      type: 'Feature' as const,
-      id: field.id,
-      geometry: field.location,
+  return apiFields.map(field => {
+    
+    // 1. Procesar Parcelas: Convertirlas al formato del mapa
+    // Esto permite que el tooltip sepa cuántas hay (length)
+    const convertedPlots: any[] = field.plots?.map((apiPlot: any) => ({
+      id: apiPlot.id,
+      name: apiPlot.name,
+      area: apiPlot.area,
+      fieldId: field.id,
+      // Aseguramos que la ubicación sea compatible
+      location: apiPlot.location || apiPlot.geometry,
+      // Pasamos datos extra para posibles tooltips de parcela
+      variety: apiPlot.variety,
       properties: {
-        name: field.name || 'Campo sin nombre',
-        color: '#' + Math.floor(Math.random()*16777215).toString(16),
+        name: apiPlot.name,
+        area: apiPlot.area,
+        variety: apiPlot.variety?.name
       }
-    } : undefined,
-    plots: [],
-  })) as MapField[];
+    })) || [];
+
+    // 2. Construir el objeto Campo
+    return {
+      id: field.id,
+      name: field.name,
+      address: field.address,
+      area: field.area,
+      location: field.location,
+      managerId: field.managerId,
+      manager: field.manager, // <--- CLAVE 1: Pasamos el objeto manager completo para el nombre
+      deletedAt: field.deletedAt,
+      boundary: field.location ? {
+        type: 'Feature' as const,
+        id: field.id,
+        geometry: field.location,
+        properties: {
+          name: field.name || 'Campo sin nombre',
+          color: '#' + Math.floor(Math.random()*16777215).toString(16),
+          // <--- CLAVE 2: Pre-calculamos datos para el tooltip aquí
+          managerName: field.manager ? `${field.manager.name} ${field.manager.lastName}` : undefined,
+          plotCount: convertedPlots.length
+        }
+      } : undefined,
+      plots: convertedPlots, // <--- CLAVE 3: Pasamos el array real en vez de []
+    } as MapField;
+  });
 }
 
 export default function CamposPage() {
-  const { fields: apiFields, loading, error, fetchFields, setFields: setFieldsState } = useFields();
+  const { fields: apiFields, loading, error, fetchFields } = useFields();
 
   // Convertir campos del API al formato del mapa
   const fields = useMemo(() => ensureFieldColors(convertApiFieldsToMapFields(apiFields)), [apiFields]);
@@ -45,7 +71,6 @@ export default function CamposPage() {
   const handleFieldsChange = useCallback((updater: (current: MapField[]) => MapField[]) => {
     // Esta función actualiza el estado local del mapa
     // No afecta directamente el estado del hook useFields
-    // Los cambios se sincronizan a través de las operaciones CRUD
   }, []);
 
   if (loading) {
