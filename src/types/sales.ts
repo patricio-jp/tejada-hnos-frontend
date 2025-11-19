@@ -37,7 +37,7 @@ export type SalesOrderDetailStatus = typeof SalesOrderDetailStatus[keyof typeof 
  * Detalle de una orden de venta (item individual)
  */
 export interface SalesOrderDetail {
-  id?: string; // UUID v4
+  id: string; // UUID v4
   salesOrderId?: string; // UUID v4
   salesOrder?: SalesOrder;
   caliber: string; // Calibre del producto vendido
@@ -55,9 +55,9 @@ export interface SalesOrderDetail {
  * Orden de venta
  */
 export interface SalesOrder {
-  id?: string; // UUID v4
+  id: string; // UUID v4
   customerId: string; // UUID v4 del cliente
-  customer?: Customer;
+  customer: Customer;
   status: SalesOrderStatus;
   totalAmount: number; // Monto total de la orden (calculado desde details)
   details: SalesOrderDetail[];
