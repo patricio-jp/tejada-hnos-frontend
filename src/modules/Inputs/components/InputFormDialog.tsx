@@ -8,6 +8,13 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { toast } from 'sonner'
 
+const currencyFormatter = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
+
 type Props = {
   trigger?: React.ReactNode
   open?: boolean
@@ -100,34 +107,45 @@ export default function InputFormDialog({ trigger, open, onOpenChange, initial =
           <DialogDescription>{isEdit ? 'Modificá los datos del insumo.' : 'Completa los datos para crear un nuevo insumo.'}</DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-3 mt-2" onSubmit={handleSubmit}>
-          <div>
-            <Label htmlFor="input-name">Nombre</Label>
-            <TextInput id="input-name" value={name} onChange={(e) => setName(e.target.value)} />
+        <form className="grid gap-4 mt-4" onSubmit={handleSubmit}>
+          <div className="space-y-1">
+            <Label htmlFor="input-name" className="text-sm">Nombre</Label>
+            <TextInput id="input-name" value={name} onChange={(e) => setName(e.target.value)} className="w-full" />
+            <p className="text-xs text-muted-foreground">Nombre del insumo (ej.: Urea granulada).</p>
           </div>
 
-          <div>
-            <Label htmlFor="input-unit">Unidad</Label>
-            <NativeSelect id="input-unit" value={unit} onChange={(e) => setUnit(e.target.value as InputUnit)}>
+          <div className="space-y-1">
+            <Label htmlFor="input-unit" className="text-sm">Unidad</Label>
+            <NativeSelect id="input-unit" value={unit} onChange={(e) => setUnit(e.target.value as InputUnit)} className="w-full">
               <option value="">Seleccionar unidad</option>
               {Object.entries(InputUnitLabels).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </NativeSelect>
+            <p className="text-xs text-muted-foreground">Unidad de medida que se utilizará para este insumo.</p>
           </div>
 
-          <div>
-            <Label htmlFor="input-stock">Stock</Label>
-            <TextInput id="input-stock" type="number" value={String(stock ?? 0)} onChange={(e) => setStock(Number(e.target.value || 0))} />
-          </div>
+          {isEdit ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="input-stock" className="text-sm">Stock</Label>
+                <TextInput id="input-stock" type="number" value={String(stock ?? 0)} disabled className="w-full" />
+                <p className="text-xs text-muted-foreground">Cantidad disponible en bodega.</p>
+              </div>
 
-          <div>
-            <Label htmlFor="input-cost">Costo por unidad</Label>
-            <TextInput id="input-cost" type="number" value={String(costPerUnit ?? 0)} onChange={(e) => setCostPerUnit(Number(e.target.value || 0))} />
-          </div>
+              <div className="space-y-1">
+                <Label htmlFor="input-cost" className="text-sm">Costo por unidad</Label>
+                <TextInput id="input-cost" type="text" value={currencyFormatter.format(costPerUnit ?? 0)} disabled className="w-full" />
+                <p className="text-xs text-muted-foreground">Costo de referencia (gestionado desde Compras).</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">El stock y el costo se gestionan desde el módulo de Compras.</div>
+          )}
 
           {localError ? <p className="text-sm text-destructive">{localError}</p> : null}
-          <div className="flex justify-end gap-2 mt-2">
+
+          <div className="flex justify-end gap-2 mt-4">
             <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
             <Button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear insumo'}</Button>
           </div>

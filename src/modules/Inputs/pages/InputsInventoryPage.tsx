@@ -79,56 +79,42 @@ export default function InputsInventoryPage() {
           Registrá nuevos insumos y consultá su stock y costo de referencia.
         </p>
       </header>
-
+      
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between w-full">
-            <div>
-              <CardTitle>Insumos</CardTitle>
-              <CardDescription>Buscá o agregá un nuevo insumo.</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-64">
-                <Label htmlFor="search" className="sr-only">Buscar</Label>
-                <Input id="search" placeholder="Buscar por nombre o unidad" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-              </div>
-              <InputFormDialog
-                trigger={
-                  <Button variant="default" size="sm" onClick={() => { setEditing(null); setDialogOpen(true) }}>
-                    <Plus className="mr-2" /> Nuevo
-                  </Button>
-                }
-                open={dialogOpen}
-                onOpenChange={(v) => setDialogOpen(v)}
-                initial={editing}
-                onSubmit={async (payload) => {
-                  if (editing) {
-                    await handleUpdate(editing.id, payload)
-                  } else {
-                    await handleCreate(payload)
-                  }
-                }}
-              />
-            </div>
+        <CardHeader className="flex items-center justify-between w-full">
+          <div>
+            <CardTitle>Listado de insumos</CardTitle>
+              <CardDescription>
+                {loading
+                  ? 'Cargando insumos...'
+                  : totalItems === 0
+                  ? 'Todavía no hay insumos cargados.'
+                  : `${totalItems} insumo${totalItems === 1 ? '' : 's'} registrados.`}
+              </CardDescription>
           </div>
-        </CardHeader>
-        <CardContent>
-          {fetchError ? (
-            <p className="mb-4 text-sm text-destructive">{fetchError}</p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Listado de insumos</CardTitle>
-            <CardDescription>
-              {loading
-                ? 'Cargando insumos...'
-                : totalItems === 0
-                ? 'Todavía no hay insumos cargados.'
-                : `${totalItems} insumo${totalItems === 1 ? '' : 's'} registrados.`}
-            </CardDescription>
+          <div className="flex items-center gap-2">
+            <div className="w-64">
+              <Label htmlFor="search" className="sr-only">Buscar</Label>
+              <Input id="search" placeholder="Buscar por nombre o unidad" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <InputFormDialog
+              trigger={
+                <Button variant="default" size="sm" onClick={() => { setEditing(null); setDialogOpen(true) }}>
+                  <Plus className="mr-2" /> Nuevo
+                </Button>
+              }
+              open={dialogOpen}
+              onOpenChange={(v) => setDialogOpen(v)}
+              initial={editing}
+              onSubmit={async (payload) => {
+                if (editing) {
+                  await handleUpdate(editing.id, payload)
+                } else {
+                  await handleCreate(payload)
+                }
+              }}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {fetchError ? (

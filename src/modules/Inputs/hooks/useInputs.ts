@@ -32,15 +32,14 @@ export function useInputs() {
   const createInput = useCallback(
     async (payload: CreateInputDto) => {
       if (!accessToken) throw new Error('No autorizado');
-      setError(null);
       try {
         const created = await inputsApi.create(payload, accessToken);
         setInputs((prev) => [created, ...prev]);
         return created;
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error creando insumo';
-        setError(msg);
-        throw err;
+        // Do not set global fetch error for operation-level errors; let caller handle it
+        throw new Error(msg);
       }
     },
     [accessToken]
@@ -49,15 +48,13 @@ export function useInputs() {
   const updateInput = useCallback(
     async (id: string, payload: UpdateInputDto) => {
       if (!accessToken) throw new Error('No autorizado');
-      setError(null);
       try {
         const updated = await inputsApi.update(id, payload, accessToken);
         setInputs((prev) => prev.map((i) => (i.id === id ? updated : i)));
         return updated;
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error actualizando insumo';
-        setError(msg);
-        throw err;
+        throw new Error(msg);
       }
     },
     [accessToken]
@@ -66,14 +63,12 @@ export function useInputs() {
   const deleteInput = useCallback(
     async (id: string) => {
       if (!accessToken) throw new Error('No autorizado');
-      setError(null);
       try {
         await inputsApi.remove(id, accessToken);
         setInputs((prev) => prev.filter((i) => i.id !== id));
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Error eliminando insumo';
-        setError(msg);
-        throw err;
+        throw new Error(msg);
       }
     },
     [accessToken]
