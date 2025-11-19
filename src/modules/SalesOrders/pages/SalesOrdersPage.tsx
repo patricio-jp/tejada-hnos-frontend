@@ -30,8 +30,9 @@ export function SalesOrdersPage() {
 
       try {
         const data = await salesOrderApi.getAll(auth.accessToken);
+        const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         if (!cancelled) {
-          setOrders(data);
+          setOrders(sorted);
         }
       } catch (err) {
         if (!cancelled) {
