@@ -46,6 +46,10 @@ export const MENUS_MAIN: MenuItem[] = [
           url: "/fields/list",
         },
         {
+          title: "Listado de Parcelas",
+          url: "/fields/plots-list",
+        },
+        {
           title: "🧪 API Tests",
           url: "/fields/test",
         }

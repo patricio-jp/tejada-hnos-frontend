@@ -50,6 +50,7 @@ const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'))
 const FieldsTestPage = React.lazy(() => import('./modules/Fields/pages/FieldsTestPage'));
 const FieldsListPage = React.lazy(() => import('./modules/Fields/pages/FieldsListPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
+const PlotsListPage = React.lazy(() => import('./modules/Plots/pages/PlotsListPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
@@ -164,7 +165,16 @@ export default function App() {
                     <AdminCapatazRoute>
                       <FieldsListPage />
                     </AdminCapatazRoute>
-                  } 
+                  }
+                />
+                {/* Ruta para la lista de parcelas - Solo Admin/Capataz */} 
+                  <Route 
+                  path="plots-list" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PlotsListPage />
+                    </AdminCapatazRoute>
+                  }
                 />
                 {/* Ruta de pruebas de API */}
                 <Route 

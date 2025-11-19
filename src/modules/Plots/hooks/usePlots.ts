@@ -1,27 +1,22 @@
 /**
  * usePlots Hook - Gestión de estado para Plots
- * 
- * Hook personalizado que encapsula la lógica de comunicación con la API de Plots
+ * * Hook personalizado que encapsula la lógica de comunicación con la API de Plots
  * y gestiona el estado local de los plots.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { plotApi, type CreatePlotDto, type UpdatePlotDto } from '../utils/plot-api';
+import { plotApi, type CreatePlotDto, type UpdatePlotDto, type PlotFilters } from '../utils/plot-api';
 import type { Plot } from '@/types/plots';
 
-export function usePlots(fieldId: string) {
+// Hacemos fieldId opcional para poder usar el hook de forma global
+export function usePlots(fieldId?: string) {
   const [plots, setPlots] = useState<Plot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Obtener todos los plots del campo
-   */
+  // 1. Fetch por Campo (Comportamiento original - Editor)
   const fetchPlots = useCallback(async () => {
-    if (!fieldId) {
-      setPlots([]); // Limpiar plots si no hay fieldId
-      return;
-    }
+    if (!fieldId) return; // Si no hay ID, no hacemos nada automático
     
     try {
       setLoading(true);
@@ -37,22 +32,43 @@ export function usePlots(fieldId: string) {
     }
   }, [fieldId]);
 
-  /**
-   * Cargar plots al montar o cuando cambie fieldId
-   */
+  // 2. NUEVO: Fetch Global con Filtros (Para la lista general)
+  const fetchAllPlots = useCallback(async (filters?: PlotFilters) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await plotApi.getAll(filters);
+      setPlots(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Cargar solo si hay fieldId (comportamiento para editores específicos)
   useEffect(() => {
-    fetchPlots();
-  }, [fetchPlots]);
+    if (fieldId && fieldId !== 'dummy-id') {
+      fetchPlots();
+    } else {
+      // Si no hay fieldId o es dummy, dejamos de cargar inicialmente
+      // para que el componente pueda llamar a fetchAllPlots manualmente
+      setLoading(false);
+    }
+  }, [fetchPlots, fieldId]);
 
   /**
    * Crear un nuevo plot
    */
   const createPlot = useCallback(async (plotData: CreatePlotDto): Promise<Plot> => {
-    if (!fieldId) throw new Error('fieldId es requerido');
+    // Validamos que tengamos un fieldId ya sea del hook o del DTO
+    if (!fieldId && !plotData.fieldId) throw new Error('fieldId es requerido');
+    const targetFieldId = fieldId || plotData.fieldId;
     
     try {
       setError(null);
-      const newPlot = await plotApi.create(fieldId, plotData);
+      const newPlot = await plotApi.create(targetFieldId, plotData);
       
       // Agregar al estado local
       setPlots(prev => [newPlot, ...prev]);
@@ -77,18 +93,14 @@ export function usePlots(fieldId: string) {
       console.log('🔧 [usePlots] Respuesta del update:', JSON.stringify(updatedPlot, null, 2));
       
       // Actualizar en el estado local
-  
-        const newPlots = plots.map(plot => {
+      const newPlots = plots.map(plot => {
           if (plot.id === plotId) {
-            console.log('🔧 [usePlots] Reemplazando plot:', plot.id);
-            console.log('🔧 [usePlots] Con:', JSON.stringify(updatedPlot, null, 2));
             return updatedPlot;
           }
           return plot;
-        });
-        console.log('🔧 [usePlots] Después de update - Nuevo estado:', newPlots);
-      setPlots( newPlots);
+      });
       
+      setPlots(newPlots);
       return updatedPlot;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -104,8 +116,6 @@ export function usePlots(fieldId: string) {
     try {
       setError(null);
       await plotApi.delete(plotId);
-      
-      // Remover del estado local
       setPlots(prev => prev.filter(plot => plot.id !== plotId));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -121,8 +131,6 @@ export function usePlots(fieldId: string) {
     try {
       setError(null);
       await plotApi.softDelete(plotId);
-      
-      // Remover del estado local
       setPlots(prev => prev.filter(plot => plot.id !== plotId));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -138,8 +146,6 @@ export function usePlots(fieldId: string) {
     try {
       setError(null);
       const restoredPlot = await plotApi.restore(plotId);
-      
-      // Agregar de vuelta al estado local
       setPlots(prev => [restoredPlot, ...prev]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -171,6 +177,7 @@ export function usePlots(fieldId: string) {
     
     // Métodos
     fetchPlots,
+    fetchAllPlots, // <--- Exportamos la nueva función para listados globales
     createPlot,
     updatePlot,
     deletePlot,

@@ -1,7 +1,6 @@
 /**
  * Plot API - Módulo de comunicación con el backend
- * 
- * CARACTERÍSTICAS:
+ * * CARACTERÍSTICAS:
  * - Timeout de 30 segundos
  * - Retry logic con exponential backoff
  * - Manejo robusto de errores
@@ -45,6 +44,35 @@ export interface UpdatePlotDto {
 }
 
 /**
+ * Filtros para búsqueda de Plots
+ */
+export interface PlotFilters {
+  fieldId?: string;
+  varietyId?: string;
+  minArea?: number;
+  maxArea?: number;
+  withDeleted?: boolean;
+}
+
+/**
+ * Helper para construir query string desde filtros
+ */
+function buildQueryString(filters?: PlotFilters): string {
+  if (!filters) return '';
+  
+  const params = new URLSearchParams();
+  
+  if (filters.fieldId) params.append('fieldId', filters.fieldId);
+  if (filters.varietyId) params.append('varietyId', filters.varietyId);
+  if (filters.minArea) params.append('minArea', filters.minArea.toString());
+  if (filters.maxArea) params.append('maxArea', filters.maxArea.toString());
+  if (filters.withDeleted) params.append('withDeleted', 'true');
+  
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/**
  * Helper para reintentar con exponential backoff
  */
 async function fetchWithRetry<T>(
@@ -82,7 +110,17 @@ async function fetchWithRetry<T>(
  */
 export const plotApi = {
   /**
-   * Obtener todos los plots de un campo
+   * Obtener todas las parcelas con filtros (Global)
+   */
+  async getAll(filters?: PlotFilters): Promise<Plot[]> {
+    return fetchWithRetry(async () => {
+      const queryString = buildQueryString(filters);
+      return apiClient.get<Plot[]>(`/plots${queryString}`);
+    });
+  },
+
+  /**
+   * Obtener todos los plots de un campo específico
    */
   async getAllByField(fieldId: string): Promise<Plot[]> {
     return fetchWithRetry(async () => {
@@ -118,11 +156,8 @@ export const plotApi = {
     return fetchWithRetry(async () => {
       const url = `/plots/${plotId}`;
       console.log('🔧 [Frontend] Haciendo PUT a:', url);
-      console.log('🔧 [Frontend] Data a enviar:', JSON.stringify(data, null, 2));
       
       const response = await apiClient.put<Plot>(url, data);
-      
-      console.log('🔧 [Frontend] Respuesta del PUT:', response);
       return response;
     }, 1);
   },
