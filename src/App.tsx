@@ -48,6 +48,7 @@ const PaginaCargando = () => (
  */
 const CamposPage = React.lazy(() => import('./modules/Fields/pages/FieldsPage'));
 const FieldsTestPage = React.lazy(() => import('./modules/Fields/pages/FieldsTestPage'));
+const FieldsListPage = React.lazy(() => import('./modules/Fields/pages/FieldsListPage'));
 const ParcelaPage = React.lazy(() => import('./modules/Plots/pages/PlotsPage'));
 const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrdersListPage'));
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
@@ -167,7 +168,7 @@ export default function App() {
                   path="list" 
                   element={
                     <AdminCapatazRoute>
-                      <PaginaNoImplementada />
+                      <FieldsListPage />
                     </AdminCapatazRoute>
                   } 
                 />
