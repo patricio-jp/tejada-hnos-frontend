@@ -63,6 +63,8 @@ const MyTasksPage = React.lazy(() => import('./modules/WorkOrders/pages/MyTasksP
 const WorkOrdersPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrdersPage'))
 const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderFormPage'))
 const WorkOrderDetailPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderDetailPage'));
+const SalesOrdersPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrdersPage'));
+const SalesOrderFormPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrderFormPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -244,6 +246,25 @@ export default function App() {
                       <PurchaseOrderClosurePage />
                     </AdminRoute>
                   } 
+                />
+              </Route>
+
+              <Route path="sales-orders">
+                <Route
+                  index
+                  element={
+                    <AdminCapatazRoute>
+                      <SalesOrdersPage />
+                    </AdminCapatazRoute>
+                  }
+                />
+                <Route
+                  path="new"
+                  element={
+                    <AdminCapatazRoute>
+                      <SalesOrderFormPage />
+                    </AdminCapatazRoute>
+                  }
                 />
               </Route>
 
