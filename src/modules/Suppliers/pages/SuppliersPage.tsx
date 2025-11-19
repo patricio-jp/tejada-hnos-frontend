@@ -102,7 +102,7 @@ export default function SuppliersPage() {
       
       await recalculateTotalSupplied(supplier.id);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
     } finally {
       // Quitar marca de "recalculando"
@@ -128,10 +128,10 @@ export default function SuppliersPage() {
       setDeleteDialogOpen(false);
       setSupplierToDelete(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
       // NO cerrar el dialog para que el usuario pueda reintentar
-      console.error('Error al eliminar proveedor:', err);
+      console.error('Error al eliminar proveedor:', _err);
     } finally {
       setIsDeleting(false);
     }
@@ -151,10 +151,10 @@ export default function SuppliersPage() {
       setRestoreDialogOpen(false);
       setSupplierToRestore(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error
       // NO cerrar el dialog para que el usuario pueda reintentar
-      console.error('Error al restaurar proveedor:', err);
+      console.error('Error al restaurar proveedor:', _err);
     } finally {
       setIsRestoring(false);
     }
@@ -175,10 +175,10 @@ export default function SuppliersPage() {
       setHardDeleteDialogOpen(false);
       setSupplierToHardDelete(undefined);
       // TODO: Mostrar toast de éxito
-    } catch (err) {
+    } catch (_err) {
       // TODO: Mostrar toast de error con mensaje claro
       // NO cerrar el dialog para que el usuario pueda reintentar o cancelar
-      console.error('Error al eliminar permanentemente:', err);
+      console.error('Error al eliminar permanentemente:', _err);
     } finally {
       setIsHardDeleting(false);
     }

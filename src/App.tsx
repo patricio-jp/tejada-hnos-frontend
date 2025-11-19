@@ -52,6 +52,9 @@ const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/page
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
+const InputsInventoryPage = React.lazy(() => import('./modules/Inputs/pages/InputsInventoryPage'));
+const HarvestingPage = React.lazy(() => import('./modules/Harvesting/pages/HarvestingPage'));
+const PlotReportPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'))
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'))
@@ -65,6 +68,7 @@ const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/Wo
 const WorkOrderDetailPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderDetailPage'));
 const SalesOrdersPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrdersPage'));
 const SalesOrderFormPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrderFormPage'));
+const ReportsPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -202,6 +206,22 @@ export default function App() {
                   </AdminCapatazRoute>
                 } 
               />
+              <Route 
+                path="inputs" 
+                element={
+                  <AdminCapatazRoute>
+                    <InputsInventoryPage />
+                  </AdminCapatazRoute>
+                } 
+              />
+              <Route 
+                path="harvesting" 
+                element={
+                  <AdminCapatazRoute>
+                    <HarvestingPage />
+                  </AdminCapatazRoute>
+                } 
+              />
               
               {/* Rutas de Órdenes de Compra - Admin/Capataz para crear/editar, solo Admin para aprobar/cerrar */}
               <Route path="purchases">
@@ -269,14 +289,24 @@ export default function App() {
               </Route>
 
               {/* Rutas administrativas - Solo Admin/Capataz */}
-              <Route 
-                path="reports" 
-                element={
-                  <AdminCapatazRoute>
-                    <PaginaNoImplementada />
-                  </AdminCapatazRoute>
-                } 
-              />
+              <Route path="reports">
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <ReportsPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="plot/:id" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PlotReportPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+              </Route>
               <Route 
                 path="users" 
                 element={

@@ -1,4 +1,4 @@
-import { BookOpen, CircleDollarSign, ClipboardList, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, Users, Map, Home, ShoppingCart, Wheat } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -46,6 +46,29 @@ export const MENUS_MAIN: MenuItem[] = [
       url: "/suppliers",
       icon: Users,
       roles: ["ADMIN", "CAPATAZ"],
+    },
+    {
+      title: "Bodega",
+      url: "/inputs",
+      icon: Package,
+      items: [
+        {
+          title: "Inventario de insumos",
+          url: "/inputs",
+        },
+      ],
+    },
+    {
+      title: "Cosecha",
+      url: "/harvesting",
+      icon: Wheat,
+      roles: ["ADMIN", "CAPATAZ"],
+      items: [
+        {
+          title: "Gestión de lotes",
+          url: "/harvesting",
+        },
+      ]
     },
     {
       title: "Órdenes de Trabajo",
