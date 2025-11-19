@@ -1,4 +1,3 @@
-// src/common/utils/map-utils.ts
 import type { FeatureCollection, Feature, Polygon } from 'geojson';
 import type { Field, FieldBoundary, Plot } from '@/lib/map-types';
 
@@ -10,29 +9,58 @@ export function fieldsToFeatureCollection(fields: Field[]): FeatureCollection {
   const features: Feature[] = [];
 
   fields.forEach(field => {
-    // Agregar el boundary del campo
+    // 1. Agregar el boundary del campo
     if (field.boundary) {
       features.push({
         ...field.boundary,
         properties: {
           ...field.boundary.properties,
-          type: 'field-boundary', // Etiqueta importante
+          type: 'field-boundary',
           fieldId: field.id,
+        }
+      });
+    } else if (field.location) {
+      // Caso: Campo del backend sin boundary estructurado
+      features.push({
+        type: 'Feature',
+        id: field.id,
+        geometry: field.location as Polygon,
+        properties: {
+          name: field.name,
+          type: 'field-boundary',
+          fieldId: field.id,
+          color: '#3b82f6'
         }
       });
     }
 
-    // Agregar todas las parcelas del campo
+    // 2. Agregar todas las parcelas del campo
     if (field.plots && field.plots.length > 0) {
       field.plots.forEach(plot => {
-        features.push({
-          ...plot,
-          properties: {
-            ...plot.properties,
-            type: 'plot', // Etiqueta importante
-            fieldId: field.id,
-          }
-        });
+        // Casteamos a 'any' para manejar la flexibilidad entre datos de backend/frontend
+        const p = plot as any;
+        
+        // Detectamos geometría (puede venir como 'geometry' o 'location')
+        const plotGeometry = p.geometry || p.location;
+
+        if (plotGeometry) {
+          // Creamos el objeto feature por separado para evitar errores de sintaxis
+          const plotFeature = {
+            type: 'Feature',
+            id: p.id,
+            geometry: plotGeometry,
+            properties: {
+              ...(p.properties || {}),
+              // Aseguramos obtener el nombre de donde sea que venga
+              name: p.name || p.properties?.name || 'Parcela',
+              type: 'plot',
+              fieldId: field.id,
+            }
+          };
+
+          // Empujamos al array
+          features.push(plotFeature as any);
+        }
       });
     }
   });
@@ -45,59 +73,47 @@ export function fieldsToFeatureCollection(fields: Field[]): FeatureCollection {
 
 /**
  * Convierte un FeatureCollection de vuelta a la estructura de campos
- * (útil para guardar cambios y detectar nuevos dibujos)
  */
 export function featureCollectionToFields(featureCollection: FeatureCollection): Field[] {
   const fieldsMap = new Map<string, Field>();
 
   featureCollection.features.forEach(feature => {
-const props = (feature.properties || {}) as Record<string, any>;
+    const props = (feature.properties || {}) as Record<string, any>;
     
     // CASO 1: Detección de NUEVO polígono (recién dibujado)
-    // InteractiveMap marca los nuevos con isNewPolygon.
-    // Si no tiene 'type' ni 'fieldId', asumimos que es un intento de crear un campo.
     const isNewDrawing = props.isNewPolygon || (!props.type && !props.fieldId);
 
     if (isNewDrawing) {
-      // Usamos el ID temporal que genera InteractiveMap o creamos uno
       const tempId = (feature.id as string) || `temp-${Date.now()}`;
-      
-      // Lo tratamos inmediatamente como un Field nuevo
       fieldsMap.set(tempId, {
         id: tempId,
-        // Construimos un boundary válido
         boundary: {
           type: 'Feature',
           id: tempId,
           geometry: feature.geometry as Polygon,
           properties: {
             name: 'Nuevo Campo',
-            color: '#3b82f6', // Color default
-            ...props,
-            type: 'field-boundary' // Le asignamos tipo para que deje de ser "nuevo" en el futuro
+            color: '#3b82f6',
+            ...(props as any),
+            type: 'field-boundary'
           } as any
         },
         plots: [],
-        // Campos opcionales requeridos por el tipo Field
         name: '',
         address: '',
         area: 0
       });
-      return; // Terminamos con este feature
+      return;
     }
 
-    // CASO 2: Features existentes (Fields o Plots guardados)
+    // CASO 2: Features existentes
     const fieldId = props.fieldId;
-    
-    // Si por alguna razón no hay fieldId en un elemento no-nuevo, lo saltamos
     if (!fieldId) return; 
 
-    // Inicializar el campo en el mapa si no existe
     if (!fieldsMap.has(fieldId)) {
       fieldsMap.set(fieldId, {
         id: fieldId,
         plots: [],
-        // Valores placeholder, se rellenarán si encontramos el boundary
         boundary: undefined as any 
       } as Field);
     }
@@ -105,18 +121,12 @@ const props = (feature.properties || {}) as Record<string, any>;
     const field = fieldsMap.get(fieldId)!;
 
     if (props.type === 'field-boundary') {
-      // Es el contorno del campo
       field.boundary = feature as unknown as FieldBoundary;
-      
-      // Si properties tiene datos del campo, actualizamos el objeto padre también
       if (props.name) field.name = props.name;
       
     } else if (props.type === 'plot') {
-      // Es una parcela dentro del campo
-      if (!field.plots) {
-        field.plots = [];
-      }
-      // Evitar duplicados si es necesario
+      if (!field.plots) field.plots = [];
+      
       const existingPlotIndex = field.plots.findIndex(p => p.id === feature.id);
       if (existingPlotIndex >= 0) {
         field.plots[existingPlotIndex] = feature as unknown as Plot;
@@ -126,8 +136,6 @@ const props = (feature.properties || {}) as Record<string, any>;
     }
   });
 
-  // Filtrar resultado final: Solo devolvemos campos que tengan un boundary definido
-  // (Esto limpia artifacts o plots huérfanos que no tengan su campo padre cargado)
   return Array.from(fieldsMap.values()).filter(f => f.boundary) as Field[];
 }
 
@@ -139,40 +147,62 @@ export function calculateCenter(featureCollection: FeatureCollection): { longitu
     return { longitude: -65.207, latitude: -26.832, zoom: 13 };
   }
 
-  let minLng = Infinity;
-  let maxLng = -Infinity;
-  let minLat = Infinity;
-  let maxLat = -Infinity;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
 
-  featureCollection.features.forEach(feature => {
-    if (feature.geometry.type === 'Polygon') {
-      // Asegurar que coordinates[0] existe
-      const ring = feature.geometry.coordinates[0];
-      if (ring) {
-        ring.forEach(coord => {
-          const [lng, lat] = coord;
-          minLng = Math.min(minLng, lng);
-          maxLng = Math.max(maxLng, lng);
-          minLat = Math.min(minLat, lat);
-          maxLat = Math.max(maxLat, lat);
-        });
-      }
+  const processCoords = (coords: any) => {
+    // coords can be nested arrays or a single [lon, lat]
+    if (!coords) return;
+    if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+      const [lon, lat] = coords as [number, number];
+      minX = Math.min(minX, lon);
+      minY = Math.min(minY, lat);
+      maxX = Math.max(maxX, lon);
+      maxY = Math.max(maxY, lat);
+    } else if (Array.isArray(coords)) {
+      for (const c of coords) processCoords(c);
     }
-  });
+  };
 
-  // Si no se encontraron coordenadas válidas
-  if (minLng === Infinity) {
-     return { longitude: -65.207, latitude: -26.832, zoom: 13 };
+  for (const feature of featureCollection.features) {
+    const geom: any = (feature as any).geometry;
+    if (!geom) continue;
+
+    if (geom.type === 'Point') {
+      processCoords(geom.coordinates);
+    } else if (geom.type === 'MultiPoint' || geom.type === 'LineString' || geom.type === 'MultiLineString') {
+      processCoords(geom.coordinates);
+    } else if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+      processCoords(geom.coordinates);
+    } else {
+      // Fallback para cualquier otra estructura con coordinates
+      if (geom.coordinates) processCoords(geom.coordinates);
+    }
   }
 
-  const longitude = (minLng + maxLng) / 2;
-  const latitude = (minLat + maxLat) / 2;
+  if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+    // Si no se pudieron calcular coordenadas válidas, devolver valores por defecto
+    return { longitude: -65.207, latitude: -26.832, zoom: 13 };
+  }
 
-  const lngDiff = maxLng - minLng;
-  const latDiff = maxLat - minLat;
-  const maxDiff = Math.max(lngDiff, latDiff);
+  const longitude = (minX + maxX) / 2;
+  const latitude = (minY + maxY) / 2;
 
-  const zoom = maxDiff > 0.1 ? 10 : maxDiff > 0.05 ? 12 : maxDiff > 0.01 ? 13 : 14;
+  // Estimación simple de zoom basada en la extensión máxima (en grados)
+  const lonDiff = maxX - minX;
+  const latDiff = maxY - minY;
+  const maxDiff = Math.max(lonDiff, latDiff);
+
+  let zoom = 13;
+  if (maxDiff > 0) {
+    // heurística: zoom ~= log2(360 / span) + ajuste
+    const raw = Math.log2(360 / maxDiff);
+    zoom = Math.round(raw) + 1;
+    if (zoom < 1) zoom = 1;
+    if (zoom > 20) zoom = 20;
+  }
 
   return { longitude, latitude, zoom };
 }
