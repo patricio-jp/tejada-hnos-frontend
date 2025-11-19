@@ -1,4 +1,4 @@
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -13,6 +13,7 @@ import type { SalesOrder } from '../utils/sales-order-api';
 
 type SalesOrdersTableProps = {
   orders: SalesOrder[];
+  onDelete: (id: string) => void;
 };
 
 type StatusBadge = {
@@ -58,7 +59,7 @@ function formatCurrency(amount: number | undefined | null): string {
   }).format(amount);
 }
 
-export function SalesOrdersTable({ orders }: SalesOrdersTableProps) {
+export function SalesOrdersTable({ orders, onDelete }: SalesOrdersTableProps) {
   return (
     <TooltipProvider>
       <Table>
@@ -66,8 +67,8 @@ export function SalesOrdersTable({ orders }: SalesOrdersTableProps) {
           <TableRow>
             <TableHead className="w-[15%]">Cliente</TableHead>
             <TableHead className="w-[100px]">Estado</TableHead>
-            <TableHead className="w-[140px]">Total</TableHead>
-            <TableHead className="w-[30%] pl-4">Productos</TableHead>
+            <TableHead className="w-[120px]">Total</TableHead>
+            <TableHead className="w-[40%] pl-4">Productos</TableHead>
             <TableHead className="w-[120px]">Fecha</TableHead>
             <TableHead className="w-[80px] text-right">Acciones</TableHead>
           </TableRow>
@@ -139,6 +140,21 @@ export function SalesOrdersTable({ orders }: SalesOrdersTableProps) {
                             </button>
                           </TooltipTrigger>
                           <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {canEdit && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-destructive transition hover:text-destructive hover:bg-destructive/10"
+                              aria-label="Eliminar"
+                              onClick={() => onDelete(order.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar</TooltipContent>
                         </Tooltip>
                       )}
                     </div>

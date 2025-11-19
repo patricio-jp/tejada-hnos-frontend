@@ -1,8 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { SalesOrdersTable } from '../components/SalesOrdersTable';
 import { salesOrderApi, type SalesOrder } from '../utils/sales-order-api';
@@ -14,44 +25,56 @@ export function SalesOrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadOrders() {
-      if (!auth.accessToken) {
-        setLoading(false);
-        setError('No se encontró un token de autenticación.');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const data = await salesOrderApi.getAll(auth.accessToken);
-        const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        if (!cancelled) {
-          setOrders(sorted);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message = err instanceof Error ? err.message : 'No se pudieron cargar las órdenes de venta.';
-          setError(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+  const loadOrders = useCallback(async () => {
+    if (!auth.accessToken) {
+      setLoading(false);
+      setError('No se encontró un token de autenticación.');
+      return;
     }
 
-    void loadOrders();
+    setLoading(true);
+    setError(null);
 
-    return () => {
-      cancelled = true;
-    };
+    try {
+      const data = await salesOrderApi.getAll(auth.accessToken);
+      const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setOrders(sorted);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'No se pudieron cargar las órdenes de venta.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }, [auth.accessToken]);
+
+  useEffect(() => {
+    void loadOrders();
+  }, [loadOrders]);
+
+  const handleDelete = useCallback((id: string) => {
+    setOrderToDelete(id);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!orderToDelete) return;
+    if (!auth.accessToken) {
+      toast.error('No se encontró un token de autenticación.');
+      setOrderToDelete(null);
+      return;
+    }
+
+    try {
+      await salesOrderApi.remove(orderToDelete, auth.accessToken);
+      toast.success('Orden eliminada correctamente');
+      await loadOrders();
+    } catch (_error) {
+      toast.error('Error al eliminar la orden');
+    } finally {
+      setOrderToDelete(null);
+    }
+  }, [auth.accessToken, loadOrders, orderToDelete]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -78,9 +101,29 @@ export function SalesOrdersPage() {
             </Button>
           </div>
         ) : (
-          <SalesOrdersTable orders={orders} />
+          <SalesOrdersTable orders={orders} onDelete={handleDelete} />
         )}
       </div>
+
+      <AlertDialog open={!!orderToDelete} onOpenChange={() => setOrderToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente la orden de venta seleccionada. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
