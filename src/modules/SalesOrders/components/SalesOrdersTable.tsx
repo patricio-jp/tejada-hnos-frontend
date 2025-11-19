@@ -64,11 +64,11 @@ export function SalesOrdersTable({ orders }: SalesOrdersTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Items</TableHead>
-            <TableHead>Fecha</TableHead>
+            <TableHead className="w-[15%]">Cliente</TableHead>
+            <TableHead className="w-[100px]">Estado</TableHead>
+            <TableHead className="w-[140px]">Total</TableHead>
+            <TableHead className="w-[30%] pl-4">Productos</TableHead>
+            <TableHead className="w-[120px]">Fecha</TableHead>
             <TableHead className="w-[80px] text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -93,7 +93,25 @@ export function SalesOrdersTable({ orders }: SalesOrdersTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
-                  <TableCell>{order.details.length}</TableCell>
+                  <TableCell className="pl-4">
+                    <div className="space-y-1 text-sm">
+                      {order.details.map((detail) => (
+                        <div key={detail.id}>
+                          <span className="font-medium text-foreground">
+                            {detail.variety} {detail.caliber}
+                          </span>
+                          <span className="ml-2 text-muted-foreground">
+                            {detail.quantityShipped ?? 0} / {detail.quantityKg} kg
+                          </span>
+                          {detail.status && detail.status !== 'PENDIENTE' && (
+                            <span className="ml-2 rounded bg-muted px-2 py-0.5 text-xs uppercase tracking-wide text-muted-foreground">
+                              {detail.status}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </TableCell>
                   <TableCell>{formatDate(order.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
