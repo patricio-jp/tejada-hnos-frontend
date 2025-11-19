@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { customerApi } from '@/modules/Customers/utils/customer-api';
+import { varietyApi } from '@/modules/Varieties/utils/variety-api';
 import type { CreateSalesOrderInput } from '../utils/sales-order-api';
 
 type SalesOrderFormProps = {
@@ -28,6 +29,8 @@ type DetailLine = {
   unitPrice: number;
   quantityKg: number;
 };
+
+const CALIBERS = ['JUMBO', 'LARGE', 'MEDIUM', 'SMALL', 'HALVES', 'PIECES'];
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-AR', {
@@ -54,6 +57,10 @@ export function SalesOrderForm({ onSubmit, onCancel, submitting = false }: Sales
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [customersError, setCustomersError] = useState<string | null>(null);
+
+  const [varieties, setVarieties] = useState<{ id: string; name: string }[]>([]);
+  const [loadingVarieties, setLoadingVarieties] = useState(false);
+  const [varietiesError, setVarietiesError] = useState<string | null>(null);
 
   const [details, setDetails] = useState<DetailLine[]>([createEmptyLine()]);
   const [formError, setFormError] = useState<string | null>(null);
@@ -91,6 +98,40 @@ export function SalesOrderForm({ onSubmit, onCancel, submitting = false }: Sales
       cancelled = true;
     };
   }, [auth.accessToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVarieties() {
+      setLoadingVarieties(true);
+      setVarietiesError(null);
+      try {
+        const response = await varietyApi.getAll();
+        const data = Array.isArray((response as any)?.data) ? (response as any).data : response;
+        if (!cancelled && Array.isArray(data)) {
+          const options = data.map((variety: { id: string; name: string }) => ({
+            id: variety.id,
+            name: variety.name,
+          }));
+          setVarieties(options);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'No se pudieron cargar las variedades';
+          setVarietiesError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingVarieties(false);
+        }
+      }
+    }
+
+    void loadVarieties();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const orderTotal = useMemo(() => {
     return details.reduce((acc, line) => acc + line.unitPrice * line.quantityKg, 0);
@@ -199,6 +240,13 @@ export function SalesOrderForm({ onSubmit, onCancel, submitting = false }: Sales
             </Button>
           </div>
 
+          {varietiesError && (
+            <p className="text-sm text-destructive">{varietiesError}</p>
+          )}
+          {loadingVarieties && !varietiesError && (
+            <p className="text-sm text-muted-foreground">Cargando variedades...</p>
+          )}
+
           <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
@@ -218,20 +266,34 @@ export function SalesOrderForm({ onSubmit, onCancel, submitting = false }: Sales
                   return (
                     <TableRow key={line.id}>
                       <TableCell>
-                        <Input
+                        <select
                           value={line.variety}
                           onChange={(event) => handleDetailChange(line.id, 'variety', event.target.value)}
-                          placeholder="Ej: Chandler"
-                          disabled={submitting}
-                        />
+                          className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                          disabled={submitting || loadingVarieties}
+                        >
+                          <option value="">Seleccionar...</option>
+                          {varieties.map((variety) => (
+                            <option key={variety.id} value={variety.name}>
+                              {variety.name}
+                            </option>
+                          ))}
+                        </select>
                       </TableCell>
                       <TableCell>
-                        <Input
+                        <select
                           value={line.caliber}
                           onChange={(event) => handleDetailChange(line.id, 'caliber', event.target.value)}
-                          placeholder="Ej: LARGE"
+                          className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
                           disabled={submitting}
-                        />
+                        >
+                          <option value="">Seleccionar...</option>
+                          {CALIBERS.map((caliber) => (
+                            <option key={caliber} value={caliber}>
+                              {caliber}
+                            </option>
+                          ))}
+                        </select>
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
