@@ -65,7 +65,9 @@ export {
 
 export type {
   Input,
-  InputUsage
+  InputUsage,
+  CreateInputDto,
+  UpdateInputDto
 } from './inputs';
 
 // ============================================

@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import InputFormDialog from '../components/InputFormDialog'
+import { toast } from 'sonner'
+import { InputUnitLabels } from '@/types'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
+import { Pencil, Trash2, Plus } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -19,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import useInputs from '../hooks/useInputs'
 
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -27,65 +32,42 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 })
 
-type InputItem = {
-  id: string
-  name: string
-  unit: string
-  stock: number
-  costPerUnit: number
-}
-
-const INITIAL_INPUTS: InputItem[] = [
-  {
-    id: 'starter-1',
-    name: 'Glifosato',
-    unit: 'L',
-    stock: 180,
-    costPerUnit: 12_500,
-  },
-  {
-    id: 'starter-2',
-    name: 'Urea granulada',
-    unit: 'KG',
-    stock: 45,
-    costPerUnit: 9_800,
-  },
-]
-
 export default function InputsInventoryPage() {
-  const [items, setItems] = useState<InputItem[]>(INITIAL_INPUTS)
-  const [name, setName] = useState('')
-  const [unit, setUnit] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const { inputs: items, loading, error: fetchError, createInput, updateInput, deleteInput } = useInputs()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<any | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<any | null>(null)
 
   const totalItems = useMemo(() => items.length, [items])
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!name.trim() || !unit.trim()) {
-      setError('Completá el nombre y la unidad del insumo.')
-      return
+  const handleCreate = async (data: any) => {
+    try {
+      await createInput(data)
+    } catch (err) {
+      // error handled inside hook, but surface if needed
+      console.error(err)
     }
+  }
 
-    const generatedId =
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Date.now().toString()
+  const handleUpdate = async (id: string, data: any) => {
+    try {
+      await updateInput(id, data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
-    setItems((previous) => [
-      {
-        id: generatedId,
-        name: name.trim(),
-        unit: unit.trim().toUpperCase(),
-        stock: 0,
-        costPerUnit: 0,
-      },
-      ...previous,
-    ])
-
-    setName('')
-    setUnit('')
-    setError(null)
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteInput(id)
+      setItemToDelete(null)
+      toast.success('Insumo eliminado')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar insumo'
+      toast.error(msg)
+      console.error(err)
+    }
   }
 
   return (
@@ -100,45 +82,39 @@ export default function InputsInventoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Nuevo insumo</CardTitle>
-          <CardDescription>Solo necesitamos el nombre y la unidad.</CardDescription>
+          <div className="flex items-center justify-between w-full">
+            <div>
+              <CardTitle>Insumos</CardTitle>
+              <CardDescription>Buscá o agregá un nuevo insumo.</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-64">
+                <Label htmlFor="search" className="sr-only">Buscar</Label>
+                <Input id="search" placeholder="Buscar por nombre o unidad" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+              <InputFormDialog
+                trigger={
+                  <Button variant="default" size="sm" onClick={() => { setEditing(null); setDialogOpen(true) }}>
+                    <Plus className="mr-2" /> Nuevo
+                  </Button>
+                }
+                open={dialogOpen}
+                onOpenChange={(v) => setDialogOpen(v)}
+                initial={editing}
+                onSubmit={async (payload) => {
+                  if (editing) {
+                    await handleUpdate(editing.id, payload)
+                  } else {
+                    await handleCreate(payload)
+                  }
+                }}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <form
-            className="flex flex-col gap-4 md:flex-row"
-            onSubmit={handleSubmit}
-            noValidate
-          >
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="input-name" className="block">
-                Nombre
-              </Label>
-              <Input
-                id="input-name"
-                placeholder="Ej: Urea"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </div>
-            <div className="w-full space-y-2 md:w-40">
-              <Label htmlFor="input-unit" className="block">
-                Unidad
-              </Label>
-              <Input
-                id="input-unit"
-                placeholder="Kg, L, Lts"
-                value={unit}
-                onChange={(event) => setUnit(event.target.value)}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button type="submit" className="w-full md:w-auto">
-                Guardar insumo
-              </Button>
-            </div>
-          </form>
-          {error ? (
-            <p className="mt-2 text-sm text-destructive">{error}</p>
+          {fetchError ? (
+            <p className="mb-4 text-sm text-destructive">{fetchError}</p>
           ) : null}
         </CardContent>
       </Card>
@@ -146,13 +122,18 @@ export default function InputsInventoryPage() {
       <Card>
         <CardHeader>
           <CardTitle>Listado de insumos</CardTitle>
-          <CardDescription>
-            {totalItems === 0
-              ? 'Todavía no hay insumos cargados.'
-              : `${totalItems} insumo${totalItems === 1 ? '' : 's'} registrados.`}
-          </CardDescription>
+            <CardDescription>
+              {loading
+                ? 'Cargando insumos...'
+                : totalItems === 0
+                ? 'Todavía no hay insumos cargados.'
+                : `${totalItems} insumo${totalItems === 1 ? '' : 's'} registrados.`}
+            </CardDescription>
         </CardHeader>
         <CardContent>
+          {fetchError ? (
+            <p className="mb-4 text-sm text-destructive">{fetchError}</p>
+          ) : null}
           <Table>
             <TableHeader>
               <TableRow>
@@ -160,31 +141,71 @@ export default function InputsInventoryPage() {
                 <TableHead>Unidad</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Costo por unidad</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 ? (
+              {
+                // apply client-side search filter
+              }
+              {items.filter(i => {
+                const term = searchTerm.trim().toLowerCase()
+                if (!term) return true
+                return i.name.toLowerCase().includes(term) || String(i.unit).toLowerCase().includes(term)
+              }).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No hay insumos cargados. Usá el formulario para crear el primero.
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    {loading ? 'Cargando...' : 'No hay insumos que coincidan.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item) => (
+                items.filter(i => {
+                  const term = searchTerm.trim().toLowerCase()
+                  if (!term) return true
+                  return i.name.toLowerCase().includes(term) || String(i.unit).toLowerCase().includes(term)
+                }).map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.unit}</TableCell>
+                    <TableCell>{(item.unit && (InputUnitLabels as any)[item.unit]) || item.unit}</TableCell>
                     <TableCell>
                       <span className={cn('font-semibold', item.stock === 0 && 'text-muted-foreground')}>
-                        {item.stock}
+                        {item.stock ?? '-'}
                       </span>
                     </TableCell>
-                    <TableCell>{currencyFormatter.format(item.costPerUnit)}</TableCell>
+                    <TableCell>{
+                      item.costPerUnit !== undefined && item.costPerUnit !== null
+                        ? currencyFormatter.format(item.costPerUnit)
+                        : '-'
+                    }</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => { setEditing(item); setDialogOpen(true) }}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+
+                                <Button variant="outline" size="sm" onClick={() => setItemToDelete(item)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+                  {/* Delete confirmation dialog (single instance) */}
+                  <AlertDialog open={!!itemToDelete} onOpenChange={(v) => { if (!v) setItemToDelete(null) }}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>Se eliminará el insumo "{itemToDelete?.name}" y esta acción no se puede deshacer.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="flex justify-end gap-2">
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => itemToDelete && handleDelete(itemToDelete.id)}>Eliminar</AlertDialogAction>
+                      </div>
+                    </AlertDialogContent>
+                  </AlertDialog>
         </CardContent>
       </Card>
     </div>

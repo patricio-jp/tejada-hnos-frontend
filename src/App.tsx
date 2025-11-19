@@ -68,6 +68,7 @@ const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/Wo
 const WorkOrderDetailPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderDetailPage'));
 const SalesOrdersPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrdersPage'));
 const SalesOrderFormPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrderFormPage'));
+const ReportsPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -293,7 +294,7 @@ export default function App() {
                   index 
                   element={
                     <AdminCapatazRoute>
-                      <PaginaNoImplementada />
+                      <ReportsPage />
                     </AdminCapatazRoute>
                   } 
                 />

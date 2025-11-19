@@ -1,4 +1,4 @@
-import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, Wheat } from "lucide-react";
+import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, Users, Map, Home, ShoppingCart, Wheat } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
