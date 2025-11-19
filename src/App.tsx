@@ -54,6 +54,7 @@ const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/p
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
 const InputsInventoryPage = React.lazy(() => import('./modules/Inputs/pages/InputsInventoryPage'));
 const HarvestingPage = React.lazy(() => import('./modules/Harvesting/pages/HarvestingPage'));
+const PlotReportPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'))
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'))
@@ -266,14 +267,24 @@ export default function App() {
               </Route>
 
               {/* Rutas administrativas - Solo Admin/Capataz */}
-              <Route 
-                path="reports" 
-                element={
-                  <AdminCapatazRoute>
-                    <PaginaNoImplementada />
-                  </AdminCapatazRoute>
-                } 
-              />
+              <Route path="reports">
+                <Route 
+                  index 
+                  element={
+                    <AdminCapatazRoute>
+                      <PaginaNoImplementada />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                <Route 
+                  path="plot/:id" 
+                  element={
+                    <AdminCapatazRoute>
+                      <PlotReportPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+              </Route>
               <Route 
                 path="users" 
                 element={
