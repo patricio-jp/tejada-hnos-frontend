@@ -1,16 +1,9 @@
-// src/modules/Fields/components/FieldsEditor.tsx
-// src/modules/Fields/components/FieldsEditor.tsx
-
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import type { Field } from "@/lib/map-types";
-import type { FeatureCollection, Feature, Polygon } from "geojson"; // Agregado Polygon
+import type { FeatureCollection, Feature, Polygon } from "geojson";
 import InteractiveMap from "@/common/components/InteractiveMap";
-
-// CAMBIO 1: Usamos el map-utils robusto que te pasé antes (que maneja types 'field' y 'plot')
-// en lugar de field-map-utils que es muy simple.
 import { fieldsToFeatureCollection, featureCollectionToFields, calculateCenter } from "@/common/utils/map-utils";
-
 import { hexToRGBA } from "@/common/utils/color-utils";
 import { FieldDetailsSheet } from "./FieldDetailsSheet";
 import { FieldDialog } from "./FieldDialog";
@@ -71,13 +64,9 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
     [localFields.length, mapData]
   );
 
-  // ---------------------------------------------------------------------------
-  // CAMBIO 2: Nuevo Handler específico para cuando InteractiveMap termina de dibujar
-  // ---------------------------------------------------------------------------
   const handleNewPolygonCreated = useCallback((feature: Feature<Polygon>) => {
     console.log("🎨 Nuevo polígono recibido del mapa:", feature);
 
-    // 1. Crear un objeto Field temporal para mostrarlo en el mapa inmediatamente
     const tempId = (feature.id as string) || `temp-${Date.now()}`;
     
     const tempField: Field = {
@@ -92,49 +81,72 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
         properties: {
           name: 'Nuevo Campo',
           color: '#3b82f6',
-          type: 'field-boundary', // Importante para que map-utils lo reconozca
+          type: 'field-boundary',
           isNewPolygon: true
         } as any
       },
       plots: []
     };
 
-    // 2. Actualizar el estado local manualmente
-    // Esto evita que el polígono desaparezca al redibujarse el mapa
     setLocalFields(prev => [...prev, tempField]);
-
-    // 3. Disparar la lógica de apertura del diálogo
     setNewFieldLocation(feature.geometry);
     setDialogOpen(true);
     setMapMode('select');
-    
   }, []);
 
-  // Handler para cambios generales (ediciones, movimientos)
+  // ---------------------------------------------------------------------------
+  // CAMBIO APLICADO: Nueva lógica de fusión para no perder datos (Capataz)
+  // ---------------------------------------------------------------------------
   const handleMapDataChange = useCallback((featureCollection: FeatureCollection) => {
-    // Usamos el map-utils robusto que maneja la mezcla de fields y plots
-    const updatedFields = featureCollectionToFields(featureCollection);
+    // 1. Obtenemos los campos "crudos" desde el mapa (tienen geometría nueva pero faltan datos)
+    const fieldsFromMap = featureCollectionToFields(featureCollection);
     
-    // Solo actualizamos si no estamos en medio de una creación nueva
-    // (para evitar conflictos con handleNewPolygonCreated)
-    if (!newFieldLocation) {
-        setLocalFields(updatedFields);
-    }
+    // 2. FUSIÓN INTELIGENTE: 
+    // Recorremos lo que viene del mapa y lo mezclamos con lo que ya tenemos en localFields
+    const mergedFields = fieldsFromMap.map(mapField => {
+      // Buscamos el campo original en nuestro estado
+      const originalField = localFields.find(f => f.id === mapField.id);
 
-    if (editingGeometryFieldId && updatedFields.length === localFields.length) {
+      if (originalField) {
+        // ✅ CASO CAMPO EXISTENTE:
+        // Mantenemos TODOS los datos originales (managerId, address, area, etc.)
+        // y solo actualizamos la parte visual (boundary/location).
+        return {
+          ...originalField, 
+          boundary: mapField.boundary,
+          location: mapField.boundary?.geometry || mapField.location,
+          // Mantenemos plots originales para no perder sus datos, 
+          // a menos que estemos explícitamente editando plots (que no es este caso)
+          plots: originalField.plots 
+        };
+      }
+      
+      // CASO CAMPO NUEVO: Lo devolvemos tal cual viene del mapa
+      return mapField;
+    });
+    
+    // 3. Detectar si se creó un campo nuevo (Lógica original)
+    if (mergedFields.length > localFields.length && !editingGeometryFieldId) {
+      const newField = mergedFields[mergedFields.length - 1];
+      setNewFieldLocation(newField.location || newField.boundary?.geometry);
+      setDialogOpen(true);
+      setMapMode('select');
+    }
+    
+    // 4. Detectar si estamos editando geometría para mostrar confirmación
+    if (editingGeometryFieldId && mergedFields.length === localFields.length) {
       setShowSaveGeometryConfirm(true);
     }
-  }, [localFields.length, editingGeometryFieldId, newFieldLocation]);
+    
+    // 5. Actualizamos el estado con los datos FUSIONADOS
+    if (!newFieldLocation) {
+        setLocalFields(mergedFields);
+    }
+  }, [localFields, editingGeometryFieldId, newFieldLocation]);
 
-
-  // ... (Resto de handlers: handleFeatureSelect, delete, edit geometry... IGUALES) ...
   const handleFeatureSelect = useCallback((feature: Feature | null, index: number | null) => {
     if (feature && index !== null) {
-      // Como ahora mapData puede tener plots mezclados, buscamos por ID
-      // El map-utils robusto pone fieldId en properties
       const fieldId = feature.properties?.fieldId || feature.id;
-      
-      // Buscar en localFields
       const field = localFields.find(f => f.id === fieldId);
       
       if (field) {
@@ -146,10 +158,6 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
       setSelectedFieldIdForPlots(null);
     }
   }, [localFields]);
-
-  // ... (Mantén los handlers handleDeleteField, confirmDelete, handleEditGeometry, etc. tal cual estaban) ...
-  // Solo pego las referencias para abreviar, asumo que el resto del archivo no cambia lógica crítica
-  // excepto la llamada al componente InteractiveMap abajo.
   
   const handleCloseSheet = useCallback(() => setSelectedField(null), []);
   
@@ -264,7 +272,6 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
       const newField = await createField(createData);
       
       setLocalFields((current) => {
-        // Filtramos cualquier campo temporal que pueda haber quedado
         const clean = current.filter(f => !f.id.toString().startsWith('temp-'));
         
         return [
@@ -279,7 +286,7 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
               properties: {
                 name: newField.name || '',
                 color: '#' + Math.floor(Math.random()*16777215).toString(16),
-                type: 'field-boundary' // Mantenemos la consistencia
+                type: 'field-boundary'
               },
             },
             location: newField.location,
@@ -313,7 +320,6 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
 
   const handleCloseEditDialog = useCallback(() => {
     if (!editingField && newFieldLocation && !wasSuccessfulCreation.current) {
-      // Limpiar temporales si cancela
       setLocalFields(prev => prev.filter(f => !f.id.toString().startsWith('temp-')));
     }
     setEditingField(null);
@@ -330,7 +336,6 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
 
   return (
     <div className="grid gap-4">
-      {/* ... (Header con botones igual que antes) ... */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {editingGeometryFieldId 
@@ -348,11 +353,10 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
         )}
       </div>
 
-      {/* CAMBIO 3: Pasamos la prop onNewPolygonCreated */}
       <InteractiveMap
         initialData={mapData}
         onDataChange={handleMapDataChange}
-        onNewPolygonCreated={handleNewPolygonCreated} // <--- ¡AQUÍ ESTÁ EL CABLE CONECTADO!
+        onNewPolygonCreated={handleNewPolygonCreated}
         onFeatureSelect={handleFeatureSelect}
         getPolygonColor={getFieldColor}
         availableModes={['view', 'drawPolygon', 'select', 'edit']}
@@ -363,7 +367,6 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
         initialViewState={initialViewState}
       />
 
-      {/* ... (El resto de componentes: FieldDetailsSheet, FieldDialog, Alerts... IGUALES) ... */}
       <FieldDetailsSheet
         field={selectedField}
         open={Boolean(selectedField)}
@@ -385,13 +388,15 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
       <AlertDialog open={Boolean(deletingField)} onOpenChange={() => setDeletingField(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Eliminar campo?</AlertDialogTitle>
+              <AlertDialogTitle>¿Mover campo a la papelera?</AlertDialogTitle>
               <AlertDialogDescription>El campo "{deletingField?.boundary?.properties?.name}" dejará de ser visible en el mapa principal, 
               pero podrás restaurarlo más adelante si lo necesitas.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-destructive">Eliminar</AlertDialogAction>
+              <AlertDialogAction onClick={confirmDelete} className="bg-orange-600 hover:bg-orange-700 text-white">
+                Eliminar
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
@@ -411,5 +416,3 @@ export function FieldsEditor({ fields }: FieldsEditorProps) {
     </div>
   );
 }
-
-export default FieldsEditor;
