@@ -29,6 +29,10 @@ export const MENUS_MAIN: MenuItem[] = [
           url: "/fields/list",
         },
         {
+          title: "Listado de Parcelas",
+          url: "/fields/plots-list",
+        },
+        {
           title: "Variedades",
           url: "/varieties",
           roles: ["ADMIN"],
