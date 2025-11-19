@@ -24,7 +24,7 @@ export type PurchaseOrderStatus = typeof PurchaseOrderStatus[keyof typeof Purcha
  * IMPORTANTE: Debe coincidir con backend PurchaseOrderDetail entity
  */
 export interface PurchaseOrderDetail {
-  id?: string; // UUID v4
+  id: string; // UUID v4
   purchaseOrderId?: string; // UUID v4
   input: Input; // Populated cuando se obtiene del servidor
   quantity: number; // Cantidad solicitada
@@ -42,7 +42,7 @@ export interface PurchaseOrderDetail {
  * IMPORTANTE: Debe coincidir con backend PurchaseOrder entity
  */
 export interface PurchaseOrder {
-  id?: string; // UUID v4
+  id: string; // UUID v4
   supplierId: string; // UUID v4
   supplier?: Supplier; // Populated cuando se obtiene del servidor
   status: PurchaseOrderStatus;

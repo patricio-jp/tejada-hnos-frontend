@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { SalesOrder } from '../utils/sales-order-api';
+import type { SalesOrder } from '@/types';
 
 type SalesOrdersTableProps = {
   orders: SalesOrder[];
@@ -36,7 +36,7 @@ function formatStatus(status: SalesOrder['status']): StatusBadge {
       return { label: 'Pagada', variant: 'default' as const, className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' };
     case 'CERRADA':
       return { label: 'Cerrada', variant: 'outline' as const };
-    case 'CANCELLED':
+    case 'CANCELADA':
       return { label: 'Cancelada', variant: 'destructive' as const };
     default:
       return { label: status, variant: 'outline' as const };
@@ -83,7 +83,7 @@ export function SalesOrdersTable({ orders, onDelete }: SalesOrdersTableProps) {
           ) : (
             orders.map((order) => {
               const status = formatStatus(order.status);
-              const canEdit = order.status === 'APROBADA';
+              const canEdit = order.status === 'PENDIENTE';
 
               return (
                 <TableRow key={order.id}>

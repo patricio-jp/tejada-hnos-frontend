@@ -4,7 +4,8 @@ import { toast } from 'sonner';
 
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { SalesOrderForm } from '../components/SalesOrderForm';
-import { salesOrderApi, type CreateSalesOrderInput } from '../utils/sales-order-api';
+import { salesOrderApi } from '../utils/sales-order-api';
+import type { CreateSalesOrderDTO } from '@/types';
 
 export function SalesOrderFormPage() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export function SalesOrderFormPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleCreate = useCallback(
-    async (data: CreateSalesOrderInput) => {
+    async (data: CreateSalesOrderDTO) => {
       if (!auth.accessToken) {
         toast.error('No se encontró un token de autenticación');
         return;

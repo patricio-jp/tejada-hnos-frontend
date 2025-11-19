@@ -8,10 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { customerApi } from '@/modules/Customers/utils/customer-api';
 import { varietyApi } from '@/modules/Varieties/utils/variety-api';
-import type { CreateSalesOrderInput } from '../utils/sales-order-api';
+import type { CreateSalesOrderDTO } from '@/types';
 
 type SalesOrderFormProps = {
-  onSubmit: (payload: CreateSalesOrderInput) => Promise<void> | void;
+  onSubmit: (payload: CreateSalesOrderDTO) => Promise<void> | void;
   onCancel?: () => void;
   submitting?: boolean;
 };
@@ -184,7 +184,7 @@ export function SalesOrderForm({ onSubmit, onCancel, submitting = false }: Sales
       return;
     }
 
-    const payload: CreateSalesOrderInput = {
+    const payload: CreateSalesOrderDTO = {
       customerId,
       details: details
         .filter((line) => line.variety.trim() && line.caliber.trim() && line.unitPrice > 0 && line.quantityKg > 0)

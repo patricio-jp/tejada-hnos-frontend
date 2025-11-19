@@ -16,7 +16,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import useAuth from '@/modules/Auth/hooks/useAuth';
 import { SalesOrdersTable } from '../components/SalesOrdersTable';
-import { salesOrderApi, type SalesOrder } from '../utils/sales-order-api';
+import { salesOrderApi } from '../utils/sales-order-api';
+import type { SalesOrder } from '@/types';
 
 export function SalesOrdersPage() {
   const navigate = useNavigate();
@@ -39,7 +40,10 @@ export function SalesOrdersPage() {
 
     try {
       const data = await salesOrderApi.getAll(auth.accessToken);
-      const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const sorted = [...data].sort(
+        (a, b) =>
+          new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+      );
       setOrders(sorted);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudieron cargar las órdenes de venta.';
