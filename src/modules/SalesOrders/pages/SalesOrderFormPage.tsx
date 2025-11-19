@@ -34,7 +34,7 @@ export function SalesOrderFormPage() {
   );
 
   return (
-    <div className="container mx-auto max-w-4xl p-6 space-y-6">
+    <div className="container mx-auto max-w-6xl p-6 space-y-6">
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Nueva Orden de Venta</h1>
         <p className="text-muted-foreground">
@@ -42,7 +42,7 @@ export function SalesOrderFormPage() {
         </p>
       </div>
 
-      <div className="rounded-md border bg-card p-6">
+      <div className="rounded-md border bg-card p-6 shadow-lg">
         <SalesOrderForm
           onSubmit={handleCreate}
           onCancel={() => navigate('/sales-orders')}
