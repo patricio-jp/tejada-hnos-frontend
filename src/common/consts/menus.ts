@@ -96,7 +96,7 @@ export const MENUS_MAIN: MenuItem[] = [
       ],
     },
     {
-      title: "Sales Orders",
+      title: "Órdenes de Venta",
       url: "/sales-orders",
       icon: CircleDollarSign,
       roles: ["ADMIN"],
