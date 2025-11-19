@@ -253,17 +253,17 @@ export default function App() {
                 <Route
                   index
                   element={
-                    <AdminRoute>
+                    <AdminCapatazRoute>
                       <SalesOrdersPage />
-                    </AdminRoute>
+                    </AdminCapatazRoute>
                   }
                 />
                 <Route
                   path="new"
                   element={
-                    <AdminRoute>
+                    <AdminCapatazRoute>
                       <SalesOrderFormPage />
-                    </AdminRoute>
+                    </AdminCapatazRoute>
                   }
                 />
               </Route>
