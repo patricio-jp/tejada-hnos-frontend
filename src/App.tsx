@@ -64,6 +64,7 @@ const WorkOrdersPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkO
 const WorkOrderFormPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderFormPage'))
 const WorkOrderDetailPage = React.lazy(() => import('./modules/WorkOrders/pages/WorkOrderDetailPage'));
 const SalesOrdersPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrdersPage'));
+const SalesOrderFormPage = React.lazy(() => import('./modules/SalesOrders/pages/SalesOrderFormPage'));
 
 import { ThemeProvider } from '@/lib/theme'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -248,14 +249,24 @@ export default function App() {
                 />
               </Route>
 
-              <Route 
-                path="sales-orders" 
-                element={
-                  <AdminRoute>
-                    <SalesOrdersPage />
-                  </AdminRoute>
-                } 
-              />
+              <Route path="sales-orders">
+                <Route
+                  index
+                  element={
+                    <AdminRoute>
+                      <SalesOrdersPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="new"
+                  element={
+                    <AdminRoute>
+                      <SalesOrderFormPage />
+                    </AdminRoute>
+                  }
+                />
+              </Route>
 
               {/* Rutas administrativas - Solo Admin/Capataz */}
               <Route 
