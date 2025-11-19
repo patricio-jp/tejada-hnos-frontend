@@ -74,9 +74,16 @@ async function create(data: CreateSalesOrderInput, token: string): Promise<Sales
     });
 }
 
+async function remove(id: string, token: string): Promise<void> {
+    await apiClient.delete(`/sale-orders/${id}`, {
+        token,
+    });
+}
+
 export const salesOrderApi = {
     getAll,
     create,
+    remove,
 };
 
 export default salesOrderApi;

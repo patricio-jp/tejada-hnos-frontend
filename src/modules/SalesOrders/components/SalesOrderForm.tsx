@@ -35,7 +35,7 @@ const CALIBERS = ['JUMBO', 'LARGE', 'MEDIUM', 'SMALL', 'HALVES', 'PIECES'];
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
-    currency: 'ARS',
+    currency: 'USD',
     minimumFractionDigits: 2,
   }).format(amount || 0);
 }

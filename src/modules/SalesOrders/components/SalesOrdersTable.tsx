@@ -53,7 +53,7 @@ function formatCurrency(amount: number | undefined | null): string {
   if (amount === undefined || amount === null) return '$ 0,00';
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
-    currency: 'ARS',
+    currency: 'USD',
     minimumFractionDigits: 2,
   }).format(amount);
 }
