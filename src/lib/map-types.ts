@@ -44,6 +44,13 @@ export type FieldBoundary = Feature<Polygon, FieldProperties>;
  */
 export interface Field {
   id: string; // ID del campo
-  boundary: FieldBoundary; // Límite (GeoJSON Feature)
+  boundary?: FieldBoundary; // Límite (GeoJSON Feature) - opcional cuando viene del backend
   plots: Plot[]; // Parcelas (Array de GeoJSON Features)
+  // Propiedades adicionales del backend
+  name?: string; // Nombre del campo (cuando viene del backend)
+  address?: string;
+  area?: number;
+  location?: any;
+  managerId?: string;
+  deletedAt?: Date | null;
 }
