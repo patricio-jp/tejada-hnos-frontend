@@ -55,6 +55,8 @@ const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/page
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
+const OrdersToShipPage = React.lazy(() => import('./modules/Shipments/pages/OrdersToShipPage'));
+const ShipmentWizardPage = React.lazy(() => import('./modules/Shipments/pages/ShipmentWizardPage'));
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'))
@@ -221,7 +223,27 @@ export default function App() {
                   </AdminCapatazRoute>
                 } 
               />
-              
+              {/* Rutas de Envíos / Logística */}
+              <Route path="shipments">
+                <Route 
+                  index // Esto maneja "/shipments"
+                  element={
+                    <AdminCapatazRoute>
+                      <OrdersToShipPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+                {/* Aquí agregaremos la ruta de picking en la Fase 3 */}
+                <Route 
+                  path="picking/:orderId" 
+                  element={
+                    <AdminCapatazRoute>
+                      <ShipmentWizardPage />
+                    </AdminCapatazRoute>
+                  } 
+                />
+              </Route>
+
               {/* Rutas de Órdenes de Compra - Admin/Capataz para crear/editar, solo Admin para aprobar/cerrar */}
               <Route path="purchases">
                 <Route 

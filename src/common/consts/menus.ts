@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart } from "lucide-react";
+import { BookOpen, ClipboardList, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, Truck } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -74,6 +74,24 @@ export const MENUS_MAIN: MenuItem[] = [
         },
       ],
     },
+    {
+      title: "Logística / Envíos",
+      url: "/shipments",
+      icon: Truck, // Asegúrate de importar Truck de lucide-react
+      roles: ["ADMIN", "CAPATAZ"],
+      items: [
+        {
+          title: "Despachar Pedidos",
+          url: "/shipments",
+        },
+        {
+          title: "Historial Envíos", // Futuro
+          url: "/shipments/history", 
+        }
+      ]
+    },
+  
+  // ...
     {
       title: "Órdenes de Trabajo",
       url: "/work-orders",
