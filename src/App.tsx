@@ -60,8 +60,6 @@ const ShipmentWizardPage = React.lazy(() => import('./modules/Shipments/pages/Sh
 const InputsInventoryPage = React.lazy(() => import('./modules/Inputs/pages/InputsInventoryPage'));
 const HarvestingPage = React.lazy(() => import('./modules/Harvesting/pages/HarvestingPage'));
 const PlotReportPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'))
-const OrdersToShipPage = React.lazy(() => import('./modules/Shipments/pages/OrdersToShipPage'));
-const ShipmentWizardPage = React.lazy(() => import('./modules/Shipments/pages/ShipmentWizardPage'));
 
 // Páginas de catálogos
 const SuppliersPage = React.lazy(() => import('./modules/Suppliers/pages/SuppliersPage'))
