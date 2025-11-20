@@ -1,4 +1,4 @@
-import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, Users, Map, Home, ShoppingCart, Wheat, Truck } from "lucide-react";
+import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, Users, Map, Home, ShoppingCart, Wheat, Truck, Truck } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
@@ -90,6 +90,24 @@ export const MENUS_MAIN: MenuItem[] = [
         }
       ]
     },
+    {
+      title: "Logística / Envíos",
+      url: "/shipments",
+      icon: Truck, // Asegúrate de importar Truck de lucide-react
+      roles: ["ADMIN", "CAPATAZ"],
+      items: [
+        {
+          title: "Despachar Pedidos",
+          url: "/shipments",
+        },
+        {
+          title: "Historial Envíos", // Futuro
+          url: "/shipments/history", 
+        }
+      ]
+    },
+  
+  // ...
     {
       title: "Órdenes de Trabajo",
       url: "/work-orders",

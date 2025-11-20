@@ -55,6 +55,8 @@ const PurchaseOrdersListPage = React.lazy(() => import('./modules/Purchases/page
 const PurchaseOrderFormPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderFormPage'));
 const PurchaseOrderApprovalPage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderApprovalPage'));
 const PurchaseOrderClosurePage = React.lazy(() => import('./modules/Purchases/pages/PurchaseOrderClosurePage'));
+const OrdersToShipPage = React.lazy(() => import('./modules/Shipments/pages/OrdersToShipPage'));
+const ShipmentWizardPage = React.lazy(() => import('./modules/Shipments/pages/ShipmentWizardPage'));
 const InputsInventoryPage = React.lazy(() => import('./modules/Inputs/pages/InputsInventoryPage'));
 const HarvestingPage = React.lazy(() => import('./modules/Harvesting/pages/HarvestingPage'));
 const PlotReportPage = React.lazy(() => import('./modules/Reports/pages/PlotReportPage'))
