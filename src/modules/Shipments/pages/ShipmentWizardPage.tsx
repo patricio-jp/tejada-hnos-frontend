@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
-import { MOCK_ORDERS } from '@/lib/mock-picking-data';
+import { MOCK_ORDERS, MOCK_INVENTORY } from '@/lib/mock-picking-data'; // Asegúrate de importar MOCK_INVENTORY
 import { Loader2, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { pickingService } from '../services/picking-service';
-import type { CreateShipmentDto } from '@/types/picking'; // <--- IMPORTAR TIPO
+import type { CreateShipmentDto, ShipmentLotDetailDto } from '@/types/picking';
 
 // Pasos
 import { PickingStep1 } from '../components/picking/PickingStep1';
@@ -18,17 +18,61 @@ export default function ShipmentWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. Cargar la orden (Mock por ahora para la UI inicial)
+  // 1. Cargar la orden
   const order = useMemo(() => 
     MOCK_ORDERS.find(o => o.id === orderId), 
   [orderId]);
 
   // 2. Estado del Wizard
   const [selectedLineIds, setSelectedLineIds] = useState<string[]>([]);
-  // Estructura: { [lineId]: { [lotId]: cantidad } }
   const [assignments, setAssignments] = useState<Record<string, Record<string, number>>>({});
 
   if (!order) return <div className="p-8 text-center">Pedido no encontrado</div>;
+
+  // --- Validaciones (NUEVO) ---
+
+  const canAdvanceFromStep2 = useMemo(() => {
+    // 1. Debe haber al menos una línea seleccionada (ya validado en paso 1, pero por seguridad)
+    if (selectedLineIds.length === 0) return false;
+
+    let hasAnyAssignment = false;
+    let hasErrors = false;
+
+    // Recorremos las líneas seleccionadas
+    for (const lineId of selectedLineIds) {
+      const line = order.details.find(d => d.id === lineId);
+      if (!line) continue;
+
+      const lineAssignments = assignments[lineId] || {};
+      let totalAssignedToLine = 0;
+
+      // Recorremos las asignaciones de lotes para esta línea
+      for (const [lotId, qty] of Object.entries(lineAssignments)) {
+        if (qty > 0) {
+          hasAnyAssignment = true;
+          
+          // Validación A: ¿Supera el stock del lote?
+          const lot = MOCK_INVENTORY.find(l => l.id === lotId);
+          if (lot && qty > lot.remainingNetWeightKg) {
+            hasErrors = true; // Error: Queriendo sacar más de lo que hay
+          }
+          
+          totalAssignedToLine += qty;
+        }
+      }
+
+      // Validación B: ¿Supera lo pedido por el cliente?
+      const pending = line.quantityKg - (line.quantityShipped || 0);
+      if (totalAssignedToLine > pending) {
+        hasErrors = true; // Error: Sobre-despacho
+      }
+    }
+
+    // Solo avanzamos si hay al menos 1kg asignado y CERO errores
+    return hasAnyAssignment && !hasErrors;
+
+  }, [selectedLineIds, assignments, order.details]);
+
 
   // --- Handlers ---
 
@@ -43,7 +87,7 @@ export default function ShipmentWizardPage() {
       ...prev,
       [lineId]: {
         ...(prev[lineId] || {}),
-        [lotId]: qty
+        [lotId]: qty < 0 ? 0 : qty // Evitar negativos
       }
     }));
   };
@@ -53,25 +97,20 @@ export default function ShipmentWizardPage() {
     setIsSubmitting(true);
     
     try {
-      // 1. Transformar el estado de la UI (assignments) al DTO que espera el backend
-      // assignments es { lineId: { lotId: qty } }
-      // DTO necesita un array plano: [{ quantity, lotId, lineId }]
+      const lotDetails: ShipmentLotDetailDto[] = [];
       
-      const lotDetails: { salesOrderDetailId: string; harvestLotId: string; quantityTakenKg: number }[] = [];
-      
-      for (const [lineId, lotAssignments] of Object.entries(assignments)) {
-        for (const [lotId, qty] of Object.entries(lotAssignments)) {
-          if (qty > 0) {
+      Object.entries(assignments).forEach(([salesOrderDetailId, lotAssignments]) => {
+        Object.entries(lotAssignments).forEach(([harvestLotId, quantityTakenKg]) => {
+          if (quantityTakenKg > 0) {
             lotDetails.push({
-              salesOrderDetailId: lineId,
-              harvestLotId: lotId,
-              quantityTakenKg: qty
+              salesOrderDetailId,
+              harvestLotId,
+              quantityTakenKg
             });
           }
-        }
-      }
+        });
+      });
 
-      // Validación simple: asegurar que hay algo que enviar
       if (lotDetails.length === 0) {
         toast.error("No hay cantidades asignadas para enviar.");
         setIsSubmitting(false);
@@ -84,14 +123,8 @@ export default function ShipmentWizardPage() {
         dispatchDate: new Date().toISOString()
       };
 
-      console.log("🚀 Enviando Picking...", payload);
-
-      // 2. Llamar al servicio (Simula Backend)
       await pickingService.submitShipment(payload);
-      
-      toast.success(`Envío registrado exitosamente. Pedido actualizado.`);
-      
-      // 3. Volver a la lista
+      toast.success(`Envío registrado exitosamente.`);
       navigate('/shipments');
 
     } catch (error) {
@@ -102,20 +135,24 @@ export default function ShipmentWizardPage() {
     }
   };
 
-  // --- Render ---
-  
   const selectedLines = order.details.filter(d => selectedLineIds.includes(d.id!));
 
   return (
     <div className="container mx-auto py-8 max-w-4xl">
-      {/* Header Simple */}
       <div className="mb-8">
         <div className="text-sm text-muted-foreground mb-1">Nueva Salida de Mercadería</div>
         <h1 className="text-3xl font-bold">Preparación de Pedido {order.number}</h1>
         <div className="text-lg text-primary font-medium">{order.customer?.name}</div>
       </div>
 
-      {/* Contenido del Paso */}
+      <div className="flex items-center gap-2 mb-8 text-sm font-medium text-muted-foreground">
+        <span className={currentStep === 1 ? "text-primary" : ""}>1. Selección</span>
+        <ChevronRight className="h-4 w-4" />
+        <span className={currentStep === 2 ? "text-primary" : ""}>2. Asignación</span>
+        <ChevronRight className="h-4 w-4" />
+        <span className={currentStep === 3 ? "text-primary" : ""}>3. Confirmar</span>
+      </div>
+
       <div className="mb-8 min-h-[400px]">
         {currentStep === 1 && (
           <PickingStep1 
@@ -139,7 +176,6 @@ export default function ShipmentWizardPage() {
         )}
       </div>
 
-      {/* Botonera de Navegación */}
       <div className="flex justify-between border-t pt-6">
         <Button 
           variant="outline" 
@@ -153,7 +189,11 @@ export default function ShipmentWizardPage() {
         {currentStep < 3 ? (
           <Button 
             onClick={() => setCurrentStep(curr => curr + 1)}
-            disabled={currentStep === 1 && selectedLineIds.length === 0}
+            // VALIDACIÓN DE PASOS
+            disabled={
+              (currentStep === 1 && selectedLineIds.length === 0) ||
+              (currentStep === 2 && !canAdvanceFromStep2) // <--- Bloqueo si hay errores
+            }
           >
             Siguiente
             <ChevronRight className="ml-2 h-4 w-4" />
