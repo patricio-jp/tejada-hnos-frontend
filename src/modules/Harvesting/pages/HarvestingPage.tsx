@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Plus, Wheat } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,30 +10,12 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import useAuth from '@/modules/Auth/hooks/useAuth'
-
-type HarvestLotStatus = 'PENDIENTE_PROCESO' | 'EN_STOCK' | 'AGOTADO'
-type Caliber = 'SMALL' | 'MEDIUM' | 'LARGE'
-
-type HarvestLot = {
-  id: string
-  parcelId: string
-  parcelName: string
-  status: HarvestLotStatus
-  grossWeight: number
-  netWeight?: number
-  caliber?: Caliber
-  createdAt: string
-}
-
-type RegisterFormState = {
-  parcelId: string
-  grossWeight: string
-}
-
-type ProcessFormState = {
-  netWeight: string
-  caliber: Caliber | ''
-}
+import {
+  createHarvestLot,
+  getHarvestLots,
+  processHarvestLot,
+} from '@/services/harvesting.service'
+import type { Caliber, HarvestLot, HarvestLotStatus } from '@/services/harvesting.service'
 
 const PARCEL_OPTIONS = [
   { id: 'parcel-01', name: 'Lote Norte - Campo 12' },
@@ -47,27 +29,6 @@ const CALIBER_OPTIONS: { value: Caliber; label: string }[] = [
   { value: 'LARGE', label: 'Large' },
 ]
 
-const INITIAL_LOTS: HarvestLot[] = [
-  {
-    id: 'lot-001',
-    parcelId: 'parcel-01',
-    parcelName: 'Lote Norte - Campo 12',
-    status: 'EN_STOCK',
-    grossWeight: 6200,
-    netWeight: 4100,
-    caliber: 'MEDIUM',
-    createdAt: '2025-02-12T10:30:00-03:00',
-  },
-  {
-    id: 'lot-002',
-    parcelId: 'parcel-02',
-    parcelName: 'La Esperanza - Cuadro A',
-    status: 'PENDIENTE_PROCESO',
-    grossWeight: 5400,
-    createdAt: '2025-02-14T08:15:00-03:00',
-  },
-]
-
 const weightFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 })
@@ -78,53 +39,89 @@ const statusStyles: Record<HarvestLotStatus, { label: string; variant: 'warning'
   AGOTADO: { label: 'Agotado', variant: 'destructive' },
 }
 
+type RegisterFormState = {
+  plotId: string
+  grossWeight: string
+}
+
+type ProcessFormState = {
+  netWeight: string
+  caliber: Caliber
+}
+
 export default function HarvestingPage() {
   const auth = useAuth()
   const role = auth.accessPayload?.role?.toUpperCase() ?? 'INVITADO'
   const canRegister = role === 'ADMIN' || role === 'CAPATAZ'
   const canProcess = role === 'ADMIN'
 
-  const [lots, setLots] = useState<HarvestLot[]>(INITIAL_LOTS)
+  const [lots, setLots] = useState<HarvestLot[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false)
   const [processDialogOpen, setProcessDialogOpen] = useState(false)
   const [lotToProcess, setLotToProcess] = useState<HarvestLot | null>(null)
 
-  const [registerForm, setRegisterForm] = useState<RegisterFormState>({ parcelId: '', grossWeight: '' })
+  const [registerForm, setRegisterForm] = useState<RegisterFormState>({ plotId: '', grossWeight: '' })
   const [processForm, setProcessForm] = useState<ProcessFormState>({ netWeight: '', caliber: 'MEDIUM' })
   const [registerError, setRegisterError] = useState<string | null>(null)
   const [processError, setProcessError] = useState<string | null>(null)
 
+  const fetchLots = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) setIsLoading(true)
+    try {
+      const data = await getHarvestLots()
+      setLots(data)
+      setLoadError(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al cargar los lotes.'
+      setLoadError(message)
+    } finally {
+      if (!options?.silent) setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLots()
+  }, [fetchLots])
+
   const totalPending = useMemo(() => lots.filter((lot) => lot.status === 'PENDIENTE_PROCESO').length, [lots])
+
+  const resolvePlotName = (lot: HarvestLot) =>
+    lot.plotName ??
+    lot.parcelName ??
+    PARCEL_OPTIONS.find((option) => option.id === (lot.plotId ?? lot.parcelId))?.name ??
+    'Parcela sin nombre'
 
   const handleOpenRegister = () => {
     setRegisterError(null)
-    setRegisterForm({ parcelId: '', grossWeight: '' })
+    setRegisterForm({ plotId: '', grossWeight: '' })
     setRegisterDialogOpen(true)
   }
 
-  const handleRegisterSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleRegisterSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const grossWeight = Number(registerForm.grossWeight)
-    if (!registerForm.parcelId || !Number.isFinite(grossWeight) || grossWeight <= 0) {
+    if (!registerForm.plotId || !Number.isFinite(grossWeight) || grossWeight <= 0) {
       setRegisterError('Seleccioná la parcela e ingresá un peso bruto válido.')
       return
     }
-    const parcel = PARCEL_OPTIONS.find((option) => option.id === registerForm.parcelId)
-    const generatedId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `lot-${Date.now()}`
 
-    const newLot: HarvestLot = {
-      id: generatedId,
-      parcelId: registerForm.parcelId,
-      parcelName: parcel?.name ?? 'Parcela sin nombre',
-      status: 'PENDIENTE_PROCESO',
-      grossWeight,
-      createdAt: new Date().toISOString(),
+    try {
+      setRegisterError(null)
+      setIsRegistering(true)
+      await createHarvestLot({ plotId: registerForm.plotId, grossWeight })
+      await fetchLots({ silent: true })
+      setRegisterDialogOpen(false)
+      setRegisterForm({ plotId: '', grossWeight: '' })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo registrar el lote.'
+      setRegisterError(message)
+    } finally {
+      setIsRegistering(false)
     }
-
-    setLots((previous) => [newLot, ...previous])
-    setRegisterDialogOpen(false)
-    setRegisterForm({ parcelId: '', grossWeight: '' })
-    setRegisterError(null)
   }
 
   const handleOpenProcess = (lot: HarvestLot) => {
@@ -134,7 +131,7 @@ export default function HarvestingPage() {
     setProcessDialogOpen(true)
   }
 
-  const handleProcessSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleProcessSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!lotToProcess) return
 
@@ -147,27 +144,20 @@ export default function HarvestingPage() {
       setProcessError('El peso neto no puede superar al bruto registrado.')
       return
     }
-    if (!processForm.caliber) {
-      setProcessError('Seleccioná un calibre.')
-      return
+
+    try {
+      setProcessError(null)
+      setIsProcessing(true)
+      await processHarvestLot(lotToProcess.id, { netWeight, caliber: processForm.caliber })
+      await fetchLots({ silent: true })
+      setProcessDialogOpen(false)
+      setLotToProcess(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo procesar el lote.'
+      setProcessError(message)
+    } finally {
+      setIsProcessing(false)
     }
-
-    setLots((previous) =>
-      previous.map((lot) =>
-        lot.id === lotToProcess.id
-          ? {
-              ...lot,
-              status: 'EN_STOCK',
-              netWeight,
-              caliber: processForm.caliber as Caliber,
-            }
-          : lot,
-      ),
-    )
-
-    setProcessDialogOpen(false)
-    setLotToProcess(null)
-    setProcessError(null)
   }
 
   const formatWeight = (value?: number) =>
@@ -222,7 +212,22 @@ export default function HarvestingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lots.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                      Cargando lotes...
+                    </TableCell>
+                  </TableRow>
+                ) : loadError ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center">
+                      <p className="text-destructive">{loadError}</p>
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => fetchLots()}>
+                        Reintentar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ) : lots.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground">
                       Todavía no hay lotes registrados. Usá el botón “Registrar lote” para cargar el primero.
@@ -232,7 +237,7 @@ export default function HarvestingPage() {
                   lots.map((lot) => (
                     <TableRow key={lot.id}>
                       <TableCell className="font-medium">{lot.id.slice(0, 8)}</TableCell>
-                      <TableCell>{lot.parcelName}</TableCell>
+                      <TableCell>{resolvePlotName(lot)}</TableCell>
                       <TableCell>
                         <Badge variant={statusStyles[lot.status].variant}>{statusStyles[lot.status].label}</Badge>
                       </TableCell>
@@ -270,7 +275,7 @@ export default function HarvestingPage() {
           setRegisterDialogOpen(open)
           if (!open) {
             setRegisterError(null)
-            setRegisterForm({ parcelId: '', grossWeight: '' })
+            setRegisterForm({ plotId: '', grossWeight: '' })
           }
         }}
       >
@@ -284,8 +289,8 @@ export default function HarvestingPage() {
               <Label htmlFor="parcel-select">Parcela</Label>
               <NativeSelect
                 id="parcel-select"
-                value={registerForm.parcelId}
-                onChange={(event) => setRegisterForm((prev) => ({ ...prev, parcelId: event.target.value }))}
+                value={registerForm.plotId}
+                onChange={(event) => setRegisterForm((prev) => ({ ...prev, plotId: event.target.value }))}
                 required
               >
                 <option value="" disabled>
@@ -313,10 +318,12 @@ export default function HarvestingPage() {
             </div>
             {registerError ? <p className="text-sm text-destructive">{registerError}</p> : null}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setRegisterDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setRegisterDialogOpen(false)} disabled={isRegistering}>
                 Cancelar
               </Button>
-              <Button type="submit">Guardar lote</Button>
+              <Button type="submit" disabled={isRegistering}>
+                {isRegistering ? 'Guardando…' : 'Guardar lote'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -378,11 +385,11 @@ export default function HarvestingPage() {
             </div>
             {processError ? <p className="text-sm text-destructive">{processError}</p> : null}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setProcessDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setProcessDialogOpen(false)} disabled={isProcessing}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={!lotToProcess}>
-                Confirmar proceso
+              <Button type="submit" disabled={!lotToProcess || isProcessing}>
+                {isProcessing ? 'Procesando…' : 'Confirmar proceso'}
               </Button>
             </DialogFooter>
           </form>
