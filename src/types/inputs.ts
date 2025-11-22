@@ -45,3 +45,13 @@ export interface InputUsage {
   inputId: string;
   input?: Input;
 }
+
+/**
+ * DTOs para crear / actualizar insumos desde el frontend
+ */
+export interface CreateInputDto {
+  name: string;
+  unit: InputUnit;
+}
+
+export type UpdateInputDto = Partial<CreateInputDto>;

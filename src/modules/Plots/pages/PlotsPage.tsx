@@ -1,46 +1,33 @@
 // src/pages/ParcelaPage.tsx
 import React, { Suspense } from 'react';
-import { MOCK_FIELDS } from '@/lib/mock-data';
-import { useParams, Link } from 'react-router';
-import { Button } from '@/components/ui/button';
+import { useParams } from 'react-router';
+import { Loader2 } from 'lucide-react';
 
-// Carga diferida (Lazy) del editor
-const PlotsEditor = React.lazy(() => 
-  import('../components/PlotsEditor').then(mod => ({ default: mod.PlotsEditor }))
+// Carga diferida (Lazy) de la página de detalle
+const PlotFieldDetailPage = React.lazy(() => 
+  import('./PlotFieldDetailPage').then(mod => ({ default: mod.PlotFieldDetailPage }))
 );
 
-// Esta función buscaría el campo (en el mock o en la API)
-function getFieldById(id: string) {
-  return MOCK_FIELDS.find(field => field.id === id);
-}
-
-export default function ParcelaPage() {
+export default function PlotsPage() {
   const { fieldId } = useParams<{ fieldId: string }>();
 
   if (!fieldId) {
-    return <div className="container mx-auto py-10">Error: ID de campo no especificado.</div>;
-  }
-  
-  const field = getFieldById(fieldId);
-
-  if (!field) {
-    return <div className="container mx-auto py-10">Campo no encontrado.</div>;
+    return (
+      <div className="container mx-auto py-10">
+        <p className="text-center text-destructive">Error: ID de campo no especificado.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-4">
-      <Button asChild variant="outline" className="mb-4">
-        <Link to="/fields">{"< Volver a Campos"}</Link>
-      </Button>
-      
-      <h1 className="text-3xl font-bold mb-1">Gestionar Parcelas</h1>
-      <h2 className="text-xl text-muted-foreground mb-4">
-        Campo: {field.boundary.properties.name}
-      </h2>
-      
-      <Suspense fallback={<p className="text-center">Cargando editor...</p>}>
-        <PlotsEditor field={field} />
-      </Suspense>
-    </div>
+    <Suspense 
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <PlotFieldDetailPage />
+    </Suspense>
   );
 }

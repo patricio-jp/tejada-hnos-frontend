@@ -1,70 +1,55 @@
-import { BookOpen, ClipboardList, Package, Settings2, SquareTerminal, Users, Map, Home, Database, ShoppingCart, Wheat } from "lucide-react";
+import { BookOpen, CircleDollarSign, ClipboardList, Package, Settings2, Users, Map, Home, ShoppingCart, Wheat, Truck } from "lucide-react";
 import type { MenuItem } from "@/common/types/menu-item";
 
 export const MENUS_MAIN: MenuItem[] = [
-  {
-      title: "Main Dashboard",
-      url: "/dashboard",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "Dashboard",
-          url: "/dashboard",
-        },
-        {
-          title: "About",
-          url: "/about",
-        },
-        {
-          title: "Protected",
-          url: "/protected",
-        },
-      ],
-    },
-    {
+    { 
       title: "Home",
       url: "/dashboard",
       icon: Home,
+      roles: ["ADMIN", "CAPATAZ"],
     },
     {
       title: "Mis Tareas",
-      url: "/work-orders/my-tasks",
+      url: "/my-tasks",
       icon: ClipboardList,
+      roles: ["OPERARIO"],
     },
     {
-      title: "Fields and Plots",
+      title: "Campos y Parcelas",
       url: "/fields",
       icon: Map,
+      roles: ["ADMIN", "CAPATAZ"],
       items: [
         {
-          title: "Fields",
+          title: "Campos",
           url: "/fields",
         },
         {
-          title: "Fields list",
+          title: "Lista de Campos",
           url: "/fields/list",
-        }
-      ]
-    },
-    {
-      title: "Catálogos",
-      url: "/suppliers",
-      icon: Database,
-      items: [
-        {
-          title: "Proveedores",
-          url: "/suppliers",
         },
         {
-          title: "Clientes",
-          url: "/customers",
+          title: "Listado de Parcelas",
+          url: "/fields/plots-list",
         },
         {
           title: "Variedades",
           url: "/varieties",
+          roles: ["ADMIN"],
         },
-      ],
+      ]
+    },
+    {
+      title: "Clientes",
+      url: "/customers",
+      icon: Users,
+      roles: ["ADMIN", "CAPATAZ"],
+    },
+    {
+      title: "Proveedores",
+      url: "/suppliers",
+      icon: Users,
+      roles: ["ADMIN", "CAPATAZ"],
     },
     {
       title: "Bodega",
@@ -87,7 +72,23 @@ export const MENUS_MAIN: MenuItem[] = [
           title: "Gestión de lotes",
           url: "/harvesting",
         },
-      ],
+      ]
+    },
+    {
+      title: "Logística / Envíos",
+      url: "/shipments",
+      icon: Truck, // Asegúrate de importar Truck de lucide-react
+      roles: ["ADMIN", "CAPATAZ"],
+      items: [
+        {
+          title: "Despachar Pedidos",
+          url: "/shipments",
+        },
+        {
+          title: "Historial Envíos", // Futuro
+          url: "/shipments/history", 
+        }
+      ]
     },
     {
       title: "Órdenes de Trabajo",
@@ -96,44 +97,75 @@ export const MENUS_MAIN: MenuItem[] = [
       roles: ["ADMIN", "CAPATAZ"],
     },
     {
-      title: "Purchase Orders",
+      title: "Órdenes de Compra",
       url: "/purchases",
       icon: ShoppingCart,
+      roles: ["ADMIN", "CAPATAZ"],
       items: [
         {
-          title: "Orders List",
+          title: "Lista de Órdenes",
           url: "/purchases",
         },
         {
-          title: "New Order",
+          title: "Nueva Orden",
           url: "/purchases/new",
         },
         {
-          title: "Approvals (Admin)",
+          title: "Aprobaciones (Admin)",
           url: "/purchases/approvals",
+          roles: ["ADMIN"],
         },
         {
-          title: "Closure (Admin)",
+          title: "Cierre (Admin)",
           url: "/purchases/closure",
+          roles: ["ADMIN"],
         },
       ],
     },
     {
-      title: "Reports",
-      url: "/reports",
-      icon: BookOpen,
-    },
-    {
-      title: "Users",
-      url: "/users",
-      icon: Users,
+      title: "Órdenes de Venta",
+      url: "/sales-orders",
+      icon: CircleDollarSign,
+      roles: ["ADMIN", "CAPATAZ"],
       items: [
         {
-          title: "List",
+          title: "Lista de Órdenes",
+          url: "/sales-orders",
+        },
+        {
+          title: "Nueva Orden",
+          url: "/sales-orders/new",
+        },
+        {
+          title: "Aprobaciones (Admin)",
+          url: "/sales-orders/approvals",
+          roles: ["ADMIN"],
+        },
+        {
+          title: "Cierre (Admin)",
+          url: "/sales-orders/closure",
+          roles: ["ADMIN"],
+        }
+      ]
+    },
+    {
+      title: "Reportes",
+      url: "/reports",
+      icon: BookOpen,
+      roles: ["ADMIN", "CAPATAZ"],
+    },
+    {
+      title: "Usuarios",
+      url: "/users",
+      icon: Users,
+      roles: ["ADMIN"],
+      items: [
+        {
+          title: "Lista de Usuarios",
           url: "/users/list",
         },
         {
-          title: "Create",
+          title: "Crear Usuario",
           url: "/users/create",
         },
       ],
