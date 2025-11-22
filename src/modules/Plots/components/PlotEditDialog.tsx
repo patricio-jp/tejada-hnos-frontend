@@ -42,16 +42,17 @@ export const PlotEditDialog: React.FC<PlotEditDialogProps> = ({
 
   // 1. Efecto de retraso para el renderizado del mapa (Fix visual)
   useEffect(() => {
-    if (!!plot) {
+    if (!plot) {
       setMapReady(false);
-      const timer = setTimeout(() => {
-        setMapReady(true);
-      }, 300);
-      return () => clearTimeout(timer);
-    } else {
-      setMapReady(false);
+      return;
     }
-  }, [!!plot]);
+
+    setMapReady(false);
+    const timer = setTimeout(() => {
+      setMapReady(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [plot]);
 
   // 2. Preparar datos para la vista previa del mapa
   const previewData = useMemo(() => {

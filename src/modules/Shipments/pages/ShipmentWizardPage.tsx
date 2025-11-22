@@ -27,11 +27,11 @@ export default function ShipmentWizardPage() {
   const [selectedLineIds, setSelectedLineIds] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<Record<string, Record<string, number>>>({});
 
-  if (!order) return <div className="p-8 text-center">Pedido no encontrado</div>;
-
   // --- Validaciones (NUEVO) ---
 
   const canAdvanceFromStep2 = useMemo(() => {
+    if (!order) return false;
+
     // 1. Debe haber al menos una línea seleccionada (ya validado en paso 1, pero por seguridad)
     if (selectedLineIds.length === 0) return false;
 
@@ -71,7 +71,9 @@ export default function ShipmentWizardPage() {
     // Solo avanzamos si hay al menos 1kg asignado y CERO errores
     return hasAnyAssignment && !hasErrors;
 
-  }, [selectedLineIds, assignments, order.details]);
+  }, [order, selectedLineIds, assignments]);
+
+  if (!order) return <div className="p-8 text-center">Pedido no encontrado</div>;
 
 
   // --- Handlers ---

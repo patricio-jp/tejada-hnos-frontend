@@ -55,7 +55,7 @@ export function PlotFieldDetailPage() {
         const fieldData = await getFieldById(fieldId);
         
         // Convertir al tipo Field de map-types
-        let convertedField = fieldData as unknown as Field;
+        const convertedField = fieldData as unknown as Field;
         
         // El backend ya trae los plots en la respuesta si están asociados
         // No necesitamos actualizar con usePlots que puede traer todos los plots del sistema
